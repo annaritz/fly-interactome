@@ -16,3 +16,4 @@ python build-fly-interactome.py
 - TODO: add argument parsing for this script.
 - TODO: Right now it assumes that all interactions are undirected. This is a simplistic assumption.
 - TODO: add summary statistics.
+- TODO: add common names.
