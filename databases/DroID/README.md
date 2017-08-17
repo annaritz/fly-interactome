@@ -26,7 +26,7 @@ worm_interologs has 3650 lines
 yeast_interologs has 81791 lines
 Wrote 262179 lines to DroID.txt (some edges may be supported by different evidence sources)
 
-316 were missing PubMed IDs and were ignored (from FlyBase).
+316 were missing PubMed IDs and were replaced by NAs.
 ```
 
 ## Convert the FlyBase Interactome into the UniProt Interactome
@@ -36,7 +36,7 @@ python ../../utils/map.py --mapfrom FLYBASE --mapto uniprot DroID-flybase.txt Dr
 ```
 The output:
 ```
-261863 lines in original file DroID-flybase.txt
-564013 lines written to DroID-uniprot.txt
+262179 lines in original file DroID-flybase.txt
+564620 lines written to DroID-uniprot.txt
 607 lines were missing an id
 ```

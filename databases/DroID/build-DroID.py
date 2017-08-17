@@ -110,11 +110,11 @@ def main():
 	for e in rows:
 		if len(rows[e][1]) == 0 or ('' in rows[e][1] and len(rows[e][1])==1):
 			missing +=1
-			continue
+			rows[e][1]='NA'
 		out.write('%s\t%s\t%s\t%s\n' % (e[0],e[1],';'.join(rows[e][1]),';'.join(rows[e][0])))
 	out.close()
 	print 'Wrote %d lines to %s (some edges may be supported by different evidence sources)' % (len(rows),outfile)
-	print '\n%d were missing PubMed IDs and were ignored (from FlyBase).' % (missing)
+	print '\n%d were missing PubMed IDs and were replaced by NAs.' % (missing)
 
 if __name__ == '__main__':
 	main()

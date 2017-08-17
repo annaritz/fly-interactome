@@ -10,11 +10,17 @@ Fly interactome compiled from a set of publicly-available sources.
 This code outputs two interactomes: one interactome based on [UniProtKB identifiers](http://www.uniprot.org/), and one interactome base on [FlyBase identifiers](http://flybase.org/).
 
 ## Databases
-The following databases are included in the *databases/* folder. Links go to the appropriate directory.
+The following databases are included in the *databases/* folder. FlyBase and UniProt interactomes exist ifor each databased, which is parsed before the interactome is compiled.  Links go to the appropriate directory.
 * [DroID](databases/DroID)
 * [SignaLink2.0](databases/SignaLink)
+* [mentha](databases/Mentha)
+* [flyReactome](databases/flyReactome)
+* [FlyMine](databases/flyMine)
+* [myProteinNet](databases/myProteinNet)
 
 ## Statistics 
 
-## Notes
+## Development Notes
 - Ported over from bitbucket account at research/2016-06-17-apical-constriction/interactomes
+- TODO: consider [MyProteinNet](http://netbio.bgu.ac.il/myproteinnet/), which provides predicted functional interactions
+- [Flynet](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2773252/) is a transcriptional regulatory network.
