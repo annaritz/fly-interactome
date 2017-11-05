@@ -29,3 +29,4 @@ For instructions for running the full interactome, see the instructions in the [
 ## Development Notes
 - Ported over from bitbucket account at research/2016-06-17-apical-constriction/interactomes
 - [Flynet](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2773252/) is a transcriptional regulatory network.
+- Add the [protein complex network](http://www.sciencedirect.com/science/article/pii/S0092867411010804), conducted in S2R+ cells.
