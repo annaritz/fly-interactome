@@ -33,22 +33,23 @@ def main():
 	
 	## get gene IDs
 	mg = mygene.MyGeneInfo()
-	result = mg.querymany(ids,scopes=args.mapfrom,fields=[args.mapto,'alias'],species=args.species)
+	result = mg.querymany(ids,scopes=args.mapfrom,fields=[args.mapto,'symbol','alias'],species=args.species)
 
 	## write mapped file
 	out = open(args.outfile,'w')
-	out.write('%s\t%s\t%s\n' % (args.mapfrom,args.mapto,'Alias'))
+	out.write('%s\t%s\t%s\t%s\n' % (args.mapfrom,args.mapto,'Symbol','Aliases'))
 
 	missing = 0
 	tot=0
 	for r in result:
 		tot+=1
-		if 'notfound' in r and r['notfound']==True or args.mapto not in r or 'alias' not in r:
+		if 'notfound' in r and r['notfound']==True or args.mapto not in r or 'symbol' not in r or 'alias' not in r:
 			# skip if query wasn't mapped.
 			missing+=1
 			continue
 		mapfrom = r['query']
 		mapto = r[args.mapto]
+		symbol = r['symbol']
 		alias = r['alias']
 		#print(mapfrom,mapto,alias)
 		if isinstance(mapto,dict):
@@ -65,9 +66,11 @@ def main():
 					args.mapto,';'.join(mapto.keys()))
 		if not isinstance(mapto,list):
 			mapto = [mapto]
+		if not isinstance(symbol,list):
+			symbol = [symbol]
 		if not isinstance(alias,list):
 			alias = [alias]
-		out.write('%s\t%s\t%s\n' % (mapfrom,';'.join(mapto),';'.join(alias)))
+		out.write('%s\t%s\t%s\t%s\n' % (mapfrom,';'.join(mapto),';'.join(symbol),';'.join(alias)))
 		
 	out.close()
 
