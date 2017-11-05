@@ -22,7 +22,8 @@ def parse_args():
 					help='0-indexed column id of PubMed evidence (default=2).')
 	parser.add_argument('--singlecol',dest='singlecol',action='store_true',default=False,
 					help='Input file is single column of identifiers; just map these (default=False).')
-
+	parser.add_argument('--retain_orig',dest='retain',action='store_true',default=False,
+					help='Include original identifier when using --singlecol mode (default=False).')
 	args = parser.parse_args()
 	print args
 	return args
@@ -49,7 +50,10 @@ def mapSingleColumn(args):
 			continue
 		nodes = mapped[thisid]
 		for node in nodes:
-			out.write('%s\n' % (node))
+			if args.retain_orig:
+				out.write('%s\t%s\n' % (thisid,node))
+			else:
+				out.write('%s\n' % (node))
 			tot+=1
 
 	print '%d ids in original file %s'  % (len(ids),args.infile)
