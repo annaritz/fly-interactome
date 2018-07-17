@@ -21,6 +21,17 @@ python ../utils/map-interactome-nodes.py --mapfrom uniprot --mapto FLYBASE inter
 python ../utils/map-interactome-nodes.py --mapfrom FLYBASE --mapto uniprot interactome-flybase.txt nodes-flybase.txt
 ```
 
+## Collapse Interactome
+
+Map the interactome to common name (merging names if they correspond to the same identifier).  Two edges that have the same nodes are collapsed into one line, with evidence sources concatenated.
+
+```
+python ../utils/map.py --mapfrom uniprot --mapto symbol interactome-uniprot.txt interactome-uniprot-collapsed.txt --merge_ids
+python ../utils/map.py --mapfrom FLYBASE --mapto symbol interactome-flybase.txt interactome-flybase-collapsed.txt --merge_ids
+```
+
+## Developer Notes
+
 - TODO: add argument parsing for this script.
 - TODO: Right now it assumes that all interactions are undirected. This is a simplistic assumption.
 - TODO: add summary statistics.

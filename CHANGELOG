@@ -1,0 +1,14 @@
+AUTHOR: Anna Ritz
+
+2018-07-16 (in preparation for Carleton College's Computational Biology Workshop Fall 2018)
+
+- Added hashtags to header line of interactome files
+- Implemented the "collapsed" version of the interactome, which maps IDs to common names
+and merges based on similar names.  Insipired by Petra Wijngaard's senior thesis at Reed College.
+
+2017-11-05 (in preparation for BIO331 Fall 2017)
+- Added both aliases and genesymbol to mapping utilities (both are useful).
+
+2017-08-16
+
+- Initial Commit

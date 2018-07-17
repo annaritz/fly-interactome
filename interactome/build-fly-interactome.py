@@ -138,7 +138,7 @@ def combine_dbs(uniprot_db,flybase_db):
 def write_file(uniprot_rows,flybase_rows):
 	uniprot_out = 'interactome-uniprot.txt'
 	out = open(uniprot_out,'w')
-	out.write('UniProt1\tUniProt2\tPubMedIDs\tEvidence\n')
+	out.write('#UniProt1\tUniProt2\tPubMedIDs\tDBs\tEvidence\n')
 	for e in uniprot_rows:
 		out.write('%s\t%s\t%s\t%s\t%s\n' % (e[0],e[1],';'.join(uniprot_rows[e][0]), \
 			';'.join(uniprot_rows[e][1]),';'.join(uniprot_rows[e][2])))
@@ -147,7 +147,7 @@ def write_file(uniprot_rows,flybase_rows):
 
 	flybase_out = 'interactome-flybase.txt'
 	out = open(flybase_out,'w')
-	out.write('FlyBase1\tFlyBase2\tPubMedIDs\tDBs\tEvidence\n')
+	out.write('#FlyBase1\tFlyBase2\tPubMedIDs\tDBs\tEvidence\n')
 	for e in flybase_rows:
 		out.write('%s\t%s\t%s\t%s\t%s\n' % (e[0],e[1],';'.join(flybase_rows[e][0]), \
 			';'.join(flybase_rows[e][1]),';'.join(flybase_rows[e][2])))

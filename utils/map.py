@@ -24,6 +24,8 @@ def parse_args():
 					help='Input file is single column of identifiers; just map these (default=False).')
 	parser.add_argument('--retain_orig',dest='retain',action='store_true',default=False,
 					help='Include original identifier when using --singlecol mode (default=False).')
+	parser.add_argument('--merge_ids',dest='merge',action='store_true',default=False,
+					help='If multiple IDs exist in the mapped namespace, merge them into one identifier (default=False).')
 	args = parser.parse_args()
 	print args
 	return args
@@ -122,12 +124,21 @@ def main():
 
 	## build mapped dictionary.
 	mapped = build_mapped_dict(result,args)
+
+	if args.merge: # redefine mapped dictionary to be single-element items
+		for key in mapped:
+			# remove the ':CGXXXX' from the names (use common name only)
+			mapped[key] = set([val.split(':')[0] for val in mapped[key]])
+			# join the names into one string.
+			mapped[key] = set([';'.join(sorted(mapped[key]))])
 		
 	## write mapped file
 	out = open(args.outfile,'w')
 	out.write('#%s1\t%s2\t%s\t%s\n' %  \
 			(args.mapto,args.mapto,header[args.colid], \
 			'\t'.join([header[i] for i in range(len(header)) if i != args.colid])))
+
+	to_write = {}
 	missing = 0
 	tot=0
 	for line in lines:
@@ -138,10 +149,38 @@ def main():
 		nodes2 = mapped[line[1]]
 		for node1 in nodes1:
 			for node2 in nodes2:
-				out.write('%s\t%s\t%s\t%s\n' %  \
-					(node1,node2,line[args.colid], \
-					'\t'.join([line[i] for i in range(len(line)) if i != args.colid])))
-				tot+=1
+				# sort nodes since the graph is undirected
+				u,v = sorted([node1,node2])
+
+				if u not in to_write:
+					to_write[u] = {}
+				if v not in to_write[u]:
+					## colid,[list of remaining cols]
+					to_write[u][v] = [e.replace(' ','-') for e in line]
+
+				else: # append to the existing edge.
+					for i in range(len(line)):
+						if line[i] not in to_write[u][v][i]:
+							to_write[u][v][i] += ';'+line[i].replace(' ','-')
+
+	# go through to_write dictionary and write the lines.
+	for node1 in sorted(to_write.keys()):
+		for node2 in sorted(to_write[node1].keys()):
+			# remove redundant entries (these can occur because we combined multiple edges that represented the same interaction)
+			for i in range(len(to_write[node1][node2])):
+				to_write[node1][node2][i] = ';'.join(sorted(list(set(to_write[node1][node2][i].split(';')))))
+
+			## double check that the list is 5 elements long - die otherwise.
+			if len(to_write[node1][node2]) != 5:
+				print(node1,node2,to_write[node1][node2])
+				sys.exit()
+
+			# finally, write the line. 
+			out.write('%s\t%s\t%s\t%s\n' %  \
+				(node1,node2,to_write[node1][node2][args.colid], \
+				'\t'.join([to_write[node1][node2][i] for i in range(len(to_write[node1][node2])) if i != args.colid])))
+			
+			tot+=1
 
 	print '%d lines in original file %s'  % (len(lines),args.infile)
 	print '%d lines written to %s' % (tot,args.outfile)
