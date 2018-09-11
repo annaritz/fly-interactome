@@ -181,6 +181,9 @@ def main():
 			# remove redundant entries (these can occur because we combined multiple edges that represented the same interaction)
 			for i in range(len(to_write[node1][node2])):
 				to_write[node1][node2][i] = ';'.join(sorted(list(set(to_write[node1][node2][i].split(';')))))
+				if to_write[node1][node2][i] == '':
+					#print('EMPTY LINE')
+					to_write[node1][node2][i] = 'NaN'
 
 			## double check that the list is 5 elements long - die otherwise.
 			if len(to_write[node1][node2]) != 5:
