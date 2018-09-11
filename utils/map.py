@@ -155,13 +155,25 @@ def main():
 				if u not in to_write:
 					to_write[u] = {}
 				if v not in to_write[u]:
-					## colid,[list of remaining cols]
-					to_write[u][v] = [e.replace(' ','-') for e in line]
+					if u == node1: # if sorting didn't make a difference, add as-is.
+						to_write[u][v] = [e.replace(' ','-') for e in line]
+					else: # sorting flipped nodes; flip first two entries.
+						to_write[u][v] = [line[1].replace(' ','-'),line[0].replace(' ','-')] + \
+							[e.replace(' ','-') for e in line[2:]]
 
 				else: # append to the existing edge.
-					for i in range(len(line)):
-						if line[i] not in to_write[u][v][i]:
-							to_write[u][v][i] += ';'+line[i].replace(' ','-')
+					if u == node1: # if sorting didn't make a difference, add as-is.
+						for i in range(len(line)):
+							if line[i] not in to_write[u][v][i]:
+								to_write[u][v][i] += ';'+line[i].replace(' ','-')
+					else: # sorting flipped nodes; flip first two entries.
+						if line[1] not in to_write[u][v][0]:
+							to_write[u][v][0] += ';'+line[1].replace(' ','-')
+						if line[0] not in to_write[u][v][1]:
+							to_write[u][v][1] += ';'+line[0].replace(' ','-')
+						for i in range(2,len(line)):
+							if line[i] not in to_write[u][v][i]:
+								to_write[u][v][i] += ';'+line[i].replace(' ','-')
 
 	# go through to_write dictionary and write the lines.
 	for node1 in sorted(to_write.keys()):
