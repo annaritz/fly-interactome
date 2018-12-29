@@ -131,7 +131,7 @@ def main():
 			mapped[key] = set([val.split(':')[0] for val in mapped[key]])
 			# join the names into one string.
 			mapped[key] = set([';'.join(sorted(mapped[key]))])
-		
+	
 	## write mapped file
 	out = open(args.outfile,'w')
 	out.write('#%s1\t%s2\t%s\t%s\n' %  \
@@ -185,8 +185,8 @@ def main():
 					#print('EMPTY LINE')
 					to_write[node1][node2][i] = 'NaN'
 
-			## double check that the list is 5 elements long - die otherwise.
-			if len(to_write[node1][node2]) != 5:
+			## double check that the list is 4 elements long - die otherwise.
+			if len(to_write[node1][node2]) < 4:
 				print(node1,node2,to_write[node1][node2])
 				sys.exit()
 

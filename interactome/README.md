@@ -15,7 +15,6 @@ python build-fly-interactome.py
 
 ## Get Mapping of Nodes
 
-
 ```
 python ../utils/map-interactome-nodes.py --mapfrom uniprot --mapto FLYBASE interactome-uniprot.txt nodes-uniprot.txt
 python ../utils/map-interactome-nodes.py --mapfrom FLYBASE --mapto uniprot interactome-flybase.txt nodes-flybase.txt

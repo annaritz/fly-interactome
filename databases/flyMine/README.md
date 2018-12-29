@@ -29,10 +29,10 @@ Parses 278370 edges.
 ```
 python ../../utils/map.py --mapfrom FLYBASE --mapto uniprot flymine-flybase.txt flymine-uniprot.txt 
 ```
-The output:
+The output (as of Dec 2018):
 ```
 278370 lines in original file flymine-flybase.txt
-225154 lines written to flymine-uniprot.txt
-180045 lines were missing an id
+111851 lines written to flymine-uniprot.txt
+178061 lines were missing an id
 ```
 

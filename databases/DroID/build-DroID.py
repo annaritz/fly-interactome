@@ -25,13 +25,13 @@ file_locations = {'confidence_correlation': 'DroID_v2015_12/confidence_correlati
 	'worm_interologs':'DroID_v2015_12/worm_interologs.txt',
 	'yeast_interologs':'DroID_v2015_12/yeast_interologs.txt'}
 
-def parse(origlines,uind,vind,pubmedind,evidence,rows,pubmedsplit=False,url=False):
+def parse(origlines,uind,vind,pubmedind,evidence,rows,pubmedsplit=False,evidencesplit=False,url=False,evidence_type=None):
 	'''
 	Parses one of the files, given the lines, the column index of 
 	(1) node u (2) node v, (3) the pubmedid(s), (4) the evidence,
 	and finally the dictionary of rows.  Returns the rows dicionar
 	'''
-	#print 'parsing...'
+	print 'parsing '+evidence_type+'...'
 	for line in origlines:
 		if 'FBGN_GENE1_BD' in line or 'PUBMEDURL' in line: # skip header
 			continue
@@ -44,10 +44,15 @@ def parse(origlines,uind,vind,pubmedind,evidence,rows,pubmedsplit=False,url=Fals
 		if edge not in rows:
 			rows[edge] = [set(),set()]
 
-		if isinstance(evidence, basestring): # if evidence is a string, add it.
-			rows[edge][0].add(evidence)
-		else:
-			rows[edge][0].add(line[evidence])
+		if evidence_type: # if evidence type is not None, then add it.
+			rows[edge][0].add(evidence_type)
+		if evidence:
+			if ';' in line[evidence]:
+				rows[edge][0].update(line[evidence].split(';'))
+			elif evidencesplit and 'MI' in line[evidence]:
+				rows[edge][0].add(line[evidence].split()[0])
+			else:
+				rows[edge][0].add(line[evidence])
 
 		if pubmedsplit:
 			rows[edge][1].add(line[pubmedind].split(':')[1])
@@ -81,20 +86,24 @@ def main():
 		origlines = open(file_locations[evidence]).read().split('\r')
 		print '%s has %d lines' % (evidence,len(origlines))
 		
-		if evidence == 'curagen_yth' or evidence == 'hybrigenics_yth':
-			rows = parse(origlines,0,1,7,evidence,rows,pubmedsplit=True)
+		if evidence == 'curagen_yth':
+			rows = parse(origlines,0,1,7,22,rows,pubmedsplit=True,evidencesplit=True,evidence_type=evidence)
+		elif evidence == 'hybrigenics_yth':
+			rows = parse(origlines,0,1,7,20,rows,pubmedsplit=True,evidencesplit=True,evidence_type=evidence)
 		elif evidence == 'finley_yth':
-			rows = parse(origlines,0,1,7,evidence,rows)
+			rows = parse(origlines,0,1,7,22,rows,evidencesplit=True,evidence_type=evidence)
 		elif evidence == 'fly_other_physical':
-			rows = parse(origlines,0,1,3,6,rows)
+			rows = parse(origlines,0,1,3,6,rows,evidence_type=evidence)
 		elif evidence == 'flybase_ppi':
-			rows = parse(origlines,0,1,12,7,rows)
+			rows = parse(origlines,0,1,12,7,rows,evidence_type=evidence)
 		elif evidence == 'dpim_coapcomplex':
-			rows = parse(origlines,0,1,4,7,rows)
+			rows = parse(origlines,0,1,4,7,rows,evidence_type=evidence)
 		elif evidence == 'perrimon_coapcomplex':
-			rows = parse(origlines,0,1,19,evidence,rows)
+			#rows = parse(origlines,0,1,19,evidence,rows)
+			rows = parse(origlines,0,1,20,19,rows,evidence_type=evidence)
 		elif evidence == 'human_interologs' or evidence == 'worm_interologs' or evidence == 'yeast_interologs':
-			rows = parse(origlines,0,1,11,evidence,rows,url=True)
+			# there is an evidence and pubmedid columns, but we want to be clear that this is interolog. 
+			rows = parse(origlines,0,1,11,None,rows,url=True,evidence_type=evidence)
 		else:
 			print origlines[0]
 			print origlines[1]
@@ -108,6 +117,9 @@ def main():
 	missing = 0
 	out.write('#FBID1\tFBID2\tPubMedIDs\tEvidence\n')
 	for e in rows:
+		# remove empty elements.
+		rows[e][1] = set([el.strip().replace(' ','-') for el in rows[e][1] if el != ''])
+		rows[e][0] = set([el.strip().replace(' ','-') for el in rows[e][0] if el != ''])
 		if len(rows[e][1]) == 0 or ('' in rows[e][1] and len(rows[e][1])==1):
 			missing +=1
 			rows[e][1]='NA'

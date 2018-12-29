@@ -23,7 +23,7 @@ uniprot_evidence_col = {'signalink':3,
 				'myproteinnet':5}
 
 flybase_evidence_col = {'signalink':3,
-				'mentha':3,
+				'mentha':7,
 				'droid':3,
 				'flyreactome':5,
 				'flymine':3,
@@ -80,7 +80,7 @@ def combine_dbs(uniprot_db,flybase_db):
 			if row[2] != 'NA': # if PubMed ID is specified...
 				## add it to the first list.
 				if ';' in row[2]:
-					uniprot_rows[e][0].update(row[2].split(';'))  
+					uniprot_rows[e][0].update([val for val in row[2].split(';')])  
 				else:
 					uniprot_rows[e][0].add(row[2])  
 
@@ -106,12 +106,12 @@ def combine_dbs(uniprot_db,flybase_db):
 			if row[2] != 'NA': # if PubMed ID is specified...
 				## add it to the first list.
 				if ';' in row[2]:
-					flybase_rows[e][0].update(row[2].split(';'))  
+					flybase_rows[e][0].update(row[2].split(';'))
 				else:
-					flybase_rows[e][0].add(row[2])  
+					flybase_rows[e][0].add(row[2])
 
 			## add the DB name to the second list.
-			flybase_rows[e][1].add(name) 
+			flybase_rows[e][1].add(name)
 
 			## add the DB name & evidence to the third list.
 			col = flybase_evidence_col[name]

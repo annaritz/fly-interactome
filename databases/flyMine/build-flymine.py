@@ -23,6 +23,9 @@ def main():
 	out = open(outfile,'w')
 	out.write('#FlyBase1\tFlyBase2\tPubMedIDs\tInteractionName\n')
 	for e in lines:
+		# replace any spaces with dashes
+		lines[e][0] = [s.replace(' ','-') for s in lines[e][0]]
+		lines[e][1] = [s.replace(' ','-') for s in lines[e][1]]
 		out.write('%s\t%s\t%s\t%s\n' % (e[0],e[1],';'.join(lines[e][0]),';'.join(lines[e][1])))
 	out.close()
 	print 'wrote to %s' % (outfile)
