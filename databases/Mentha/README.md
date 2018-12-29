@@ -19,9 +19,9 @@ Writes 45669 lines to mentha-uniprot.txt.
 python ../../utils/map.py --mapfrom uniprot --mapto FLYBASE mentha-uniprot.txt mentha-flybase.txt 
 ```
 
-The output:
+The output (from Dec 2018:
 ```
 45669 lines in original file mentha-uniprot.txt
-43514 lines written to mentha-flybase.txt
-3525 lines were missing an id
+41771 lines written to mentha-flybase.txt
+3830 lines were missing an id
 ```

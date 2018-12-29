@@ -19,6 +19,8 @@ def main():
 	out = open(outname,'w')
 	out.write('#UniProtID1\tUniProtID2\tPubMedIds\tName1\tName2\tScore\n')
 	for r in rows:
+		if len(r[5]) == 0:
+			r[5] = ['unpublished']
 		out.write('%s\t%s\t%s\t%s\t%s\t%s\n' % 
 			(r[0],r[2],';'.join(r[5]),r[1],r[3],r[4]))
 	out.close()

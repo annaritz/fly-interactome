@@ -29,6 +29,18 @@ python ../utils/map.py --mapfrom uniprot --mapto symbol interactome-uniprot.txt 
 python ../utils/map.py --mapfrom FLYBASE --mapto symbol interactome-flybase.txt interactome-flybase-collapsed.txt --merge_ids
 ```
 
+## Map Evidence Codes to MI Ontology
+
+Get the [Molecular Interactions Controlled Vocabulary](https://www.ebi.ac.uk/ols/ontologies/mi) (click the Download button).
+
+```
+python ../utils/evidence-to-mi.py mi.owl interactome-flybase.txt interactome-flybase-evidence.txt
+python ../utils/evidence-to-mi.py mi.owl interactome-flybase-collapsed.txt interactome-flybase-collapsed-evidence.txt
+python ../utils/evidence-to-mi.py mi.owl interactome-uniprot.txt interactome-uniprot-evidence.txt
+python ../utils/evidence-to-mi.py mi.owl interactome-uniprot-collapsed.txt interactome-uniprot-collapsed-evidence.txt
+```
+
+
 ## Developer Notes
 
 - TODO: add argument parsing for this script.

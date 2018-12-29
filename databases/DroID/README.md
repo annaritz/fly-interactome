@@ -34,9 +34,9 @@ Wrote 262179 lines to DroID.txt (some edges may be supported by different eviden
 ```
 python ../../utils/map.py --mapfrom FLYBASE --mapto uniprot DroID-flybase.txt DroID-uniprot.txt 
 ```
-The output:
+The output (as of Dec 2018):
 ```
-262179 lines in original file DroID-flybase.txt
-564620 lines written to DroID-uniprot.txt
-607 lines were missing an id
+262437 lines in original file DroID-flybase.txt
+496848 lines written to DroID-uniprot.txt
+6111 lines were missing an id
 ```

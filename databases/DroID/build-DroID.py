@@ -35,6 +35,7 @@ def parse(origlines,uind,vind,pubmedind,evidence,rows,pubmedsplit=False,evidence
 	for line in origlines:
 		if 'FBGN_GENE1_BD' in line or 'PUBMEDURL' in line: # skip header
 			continue
+		line = line.replace('"','')
 		line = line.split('\t')
 		edge = (line[uind],line[vind])
 		revedge = (line[vind],line[uind])
@@ -46,31 +47,40 @@ def parse(origlines,uind,vind,pubmedind,evidence,rows,pubmedsplit=False,evidence
 
 		if evidence_type: # if evidence type is not None, then add it.
 			rows[edge][0].add(evidence_type)
-		if evidence:
-			if ';' in line[evidence]:
-				rows[edge][0].update(line[evidence].split(';'))
-			elif evidencesplit and 'MI' in line[evidence]:
-				rows[edge][0].add(line[evidence].split()[0])
-			else:
-				rows[edge][0].add(line[evidence])
+		
+		if evidence == pubmedind: # fly_other_physical and ortholog files.. parses things like
+			#"25294943(MI:0007(anti tag coimmunoprecipitation),MI:0096(pull down)),21447707(MI:0963(interactome parallel affinity capture))"
+			for item in line[evidence].split(','):
+				combined = item.replace('"','').split('(')
+				if combined[0] == '':
+					continue
+				if 'MI' in combined[0]: # add ev type
+					rows[edge][0].add(combined[0]) # add evidence type
+				else:
+					rows[edge][1].add(combined[0]) # add pubmedid
+					rows[edge][0].add(combined[1]) # add evidence type
+ 		else:
+			if evidence:
+				if ';' in line[evidence]:
+					rows[edge][0].update(line[evidence].split(';'))
+				elif evidencesplit and 'MI' in line[evidence]:
+					rows[edge][0].add(line[evidence].split()[0].split('(')[0])
+				else:
+					rows[edge][0].update(line[evidence].split(','))
 
-		if pubmedsplit:
-			rows[edge][1].add(line[pubmedind].split(':')[1])
-		elif url:
-			rows[edge][1].update([l for l in line[pubmedind].split('&')[2].split('=')[1].split(',')])
-		else:
-			rows[edge][1].add(line[pubmedind])
+			if pubmedsplit:
+				rows[edge][1].add(line[pubmedind].split(':')[1])
+			elif url:
+				rows[edge][1].update([l for l in line[pubmedind].split('&')[2].split('=')[1].split(',')])
+			else:
+				rows[edge][1].update(line[pubmedind].split(','))
 	#print 'done parsing.'
 
-	## remove 'unassigned4' (IntAct error)
-	toremove = set()
+	## replace 'unassigned4' with 'unpublished' (IntAct error)
 	for e in rows:
 		if 'unassigned4' in rows[e][1]:
 			rows[e][1] = set([p for p in rows[e][1] if p != 'unassigned4'])
-			if len(rows[e][1]) == 0:
-				#print 'Warning...removing ',e,' because it no longer has evidence.'
-				toremove.add(e)
-	rows = {e:rows[e] for e in rows if e not in toremove}
+			rows[e][1].add('unpublished')
 	return rows
 
 
@@ -93,11 +103,11 @@ def main():
 		elif evidence == 'finley_yth':
 			rows = parse(origlines,0,1,7,22,rows,evidencesplit=True,evidence_type=evidence)
 		elif evidence == 'fly_other_physical':
-			rows = parse(origlines,0,1,3,6,rows,evidence_type=evidence)
+			rows = parse(origlines,0,1,2,2,rows,evidencesplit=True,evidence_type=evidence)
 		elif evidence == 'flybase_ppi':
 			rows = parse(origlines,0,1,12,7,rows,evidence_type=evidence)
 		elif evidence == 'dpim_coapcomplex':
-			rows = parse(origlines,0,1,4,7,rows,evidence_type=evidence)
+			rows = parse(origlines,0,1,4,6,rows,evidencesplit=True,evidence_type=evidence)
 		elif evidence == 'perrimon_coapcomplex':
 			#rows = parse(origlines,0,1,19,evidence,rows)
 			rows = parse(origlines,0,1,20,19,rows,evidence_type=evidence)

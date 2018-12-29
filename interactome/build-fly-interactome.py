@@ -88,11 +88,12 @@ def combine_dbs(uniprot_db,flybase_db):
 			uniprot_rows[e][1].add(name) 
 
 			## add the DB name & evidence to the third list.
-			col = uniprot_evidence_col[name]
-			if ';' in row[col]:
-				uniprot_rows[e][2].update([name+':'+ev for ev in row[col].split(';')])
-			else:
-				uniprot_rows[e][2].add(name+':'+row[col])
+			if name != 'mentha': # mentha has scores, not evidence types. Skip.
+				col = uniprot_evidence_col[name]
+				if ';' in row[col]:
+					uniprot_rows[e][2].update([name+':'+ev for ev in row[col].split(';')])
+				else:
+					uniprot_rows[e][2].add(name+':'+row[col])
 
 		## process flybase
 		for row in flybase_db[name]: 
@@ -114,24 +115,23 @@ def combine_dbs(uniprot_db,flybase_db):
 			flybase_rows[e][1].add(name)
 
 			## add the DB name & evidence to the third list.
-			col = flybase_evidence_col[name]
-			if col >= len(row):
-				print name,col,row
-			if ';' in row[col]:
-				flybase_rows[e][2].update([name+':'+ev for ev in row[col].split(';')])
-			else:
-				flybase_rows[e][2].add(name+':'+row[col])
+			if name != 'mentha': # mentha has scores, not evidence types. Skip.
+				col = flybase_evidence_col[name]
+				if ';' in row[col]:
+					flybase_rows[e][2].update([name+':'+ev for ev in row[col].split(';')])
+				else:
+					flybase_rows[e][2].add(name+':'+row[col])
 
-	## add 'NA' to any empty sets
+	## add 'None' to any empty sets
 	for e in uniprot_rows:
-		for i in [0,1]:
+		for i in [0,1,2]:
 			if len(uniprot_rows[e][i]) == 0:
-				uniprot_rows[e][i ] = 'NA'
+				uniprot_rows[e][i ] = ['None']
 
 	for e in flybase_rows:
-		for i in [0,1]:
+		for i in [0,1,2]:
 			if len(flybase_rows[e][i]) == 0:
-				flybase_rows[e][i ] = 'NA'
+				flybase_rows[e][i ] = ['None']
 
 	return uniprot_rows,flybase_rows
 
