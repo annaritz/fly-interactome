@@ -6,10 +6,15 @@ Fly interactome compiled from a set of publicly-available sources.  The files in
 
 These files and code are released under the GPL-3.0 license.  Summary statistics about these interactomes is in the [interactome/](interactome/) directory.
 
-`New as of July 2018:` collapsed versions of the interactions in common name are now available.  See details in the [interactome/](interactome/) directory.
+**New as of July 2018:** collapsed versions of the interactions in common name are now available.  See details in the [interactome/](interactome/) directory.
 
 - `interactome-uniprot-collapsed.txt` ([link to file](interactome/interactome-uniprot-collapsed.txt)): Interactome in [UniProtKB IDs](http://www.uniprot.org/)
 - `interactome-flybase-collapsed.txt` ([link to file](interactome/interactome-flybase-collapsed.txt)): Interactome in [FlyBase IDs](http://flybase.org/).
+
+**New as of December 2018:** interactomes with evidence codes mapped to [Molecular Interactions Controlled Vocabulary](https://www.ebi.ac.uk/ols/ontologies/mi) terms are now available.  See details in the [interactome/](interactome/) directory.
+
+- `interactome-uniprot-collapsed-evidence.txt` ([link to file](interactome/interactome-uniprot-collapsed-evidence.txt)): Interactome in [UniProtKB IDs](http://www.uniprot.org/)
+- `interactome-flybase-collapsed-evidence.txt` ([link to file](interactome/interactome-flybase-collapsed-evidence.txt)): Interactome in [FlyBase IDs](http://flybase.org/).
 
 ## Databases
 The interactome is built by combining these databases. FlyBase and UniProt interactomes exist for each database, which is parsed before the interactome is compiled.  Links point to the appropriate directory.
