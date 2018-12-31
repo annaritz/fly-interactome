@@ -1,11 +1,11 @@
 # Weighting the Fly Interactome
 
-This directory contains weighted interactome files of the form `Node1 Node2 Weight`.  
+This directory contains weighted interactome files of the form `Node1 Node2 Weight`.  This goes through the steps for the interactome collapsed by common name and merged evidence in FlyBase identifiers (`interactome-flybase-collapsed-evidence.txt`)
 
 
 ## Weighting Approach
 
-We weight the edges using an equation with three terms.  The weighting is inspired by the [HIPPIE interactome](http://cbdm-01.zdv.uni-mainz.de/~mschaefer/hippie/index.php) weighting (described in Schaefer et al, Plos One, 2012)[https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0031826].  
+We weight the edges using an equation with three terms.  The weighting is inspired by the [HIPPIE interactome](http://cbdm-01.zdv.uni-mainz.de/~mschaefer/hippie/index.php) weighting [described in Schaefer et al, Plos One, 2012](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0031826).  
 
 1. _s1(studies)_: non-linear saturating function of the number of studies (PubMedIDs)
 2. _s2(databases)_: non-linear saturating function of the number of databases that report interaction
@@ -15,4 +15,68 @@ The final score is a weighted linear combination of the three terms, where the w
 
 _w1_ _s1(studies)_ + _w2_ _s2(databases)_ + _w3_ _s3(evidence)_
 
-There are five unknowns in this equation: the sttepness of the slope in the two non-linear saturating functions (call them _a1_ and _a2_), and _w1_ and _w2_ (since _w3 = 1-w2-w3_).  These are chosen via a parameter sweep using the DroID dataset (TODO).
+There are five unknowns in this equation: the sttepness of the slope in the two non-linear saturating functions (call them _a1_ and _a2_), and _w1_ and _w2_ (since _w3 = 1-w2-w3_).  These are chosen via a parameter sweep using the DroID dataset (TODO).  This is similar to the process described in [described in Schaefer et al, Plos One, 2012](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0031826).
+
+### Evidence-based Weighting: 
+
+#### Input Files
+
+The file `weight-edges-by-evidence.py` is adapted from [Poirel et al., J. Computational Biology 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3646337/) to weight edges by GO term similarity.  It takes a number of required files:
+
+1. The interactome (collapsed version of file default): `../interactome-flybase-collapsed-evidence.txt`
+
+2. Gene Annotations file. Species-specific file from [Gene Ontology](http://www.geneontology.org/page/download-go-annotations).  See more information about the [FlyBase README](http://geneontology.org/gene-associations/readme/fb.README).  
+
+```
+wget http://geneontology.org/gene-associations/gene_association.fb.gz
+gunzip gene_association.fb.gz
+```
+
+Convert the FlyBase-formatted gene association file to a `.gmt` file (this is the format that the script expects):
+
+```
+python ../../utils/generate_annotation_file.py gene_association.fb gene_association.gmt
+```
+
+3. Gene Ontology file (.obo).  The daily releases of the downloads (downloaded 2018-12-30):
+
+```
+wget http://purl.obolibrary.org/obo/go.obo
+```
+
+4. GO Functions for weighting. These should be GO terms that include regulatory (or signaling) interactions that will be considered positives. We will make this very general, with the goal to identify protein regulation:
+
+```
+GO:0005515	protein binding
+GO:0023051	regulation of signaling
+GO:0009966	regulation of signal transduction
+```
+
+This is stored in `functions.txt`.
+
+#### Weighting edges
+
+```
+python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt -a gene_association.gmt -t go.obo -f functions.txt -o interactome-flybase-collapsed-evidence-weighted
+```
+
+### NMII Details
+
+Non-muscle myosin (NMII) is composed of mutliple subunits, each with their own protein name in FlyBase and [UniProt](https://www.uniprot.org/uniprot/?query=%22non%20muscle%22%20myosin&fil=organism%3A%22Drosophila+melanogaster+%28Fruit+fly%29+%5B7227%5D%22&sort=score):
+
+- **zip**: zipper; Myosin heavy chain; CG15792 (UniProtID: Q99323)
+- **Mlc-c**: Myosin essential light chain (UniProtID: P54357)
+- **sqh**: Myosin regulatory light chain sqh; CG3595 (UniProtID: P40423)
+
+I *think* that the regulatory regions are on the light chains -- Mlc-c (which binds myosin and calcium) and sqh (which binds calcium).  Let's start with Mlc-c -- it is annotated to 10 GO terms:
+
+- [**GO:0016459**](http://amigo.geneontology.org/amigo/term/GO:0016459): myosin complex
+- [**GO:0005509**](http://amigo.geneontology.org/amigo/term/GO:0005509): calcium ion binding
+- [**GO:0032036**](http://amigo.geneontology.org/amigo/term/GO:0032036): myosin heavy chain binding
+- [**GO:0030048**](http://amigo.geneontology.org/amigo/term/GO:0030048): actin filament-based movement
+- [**GO:0031477**](http://amigo.geneontology.org/amigo/term/GO:0031477): myosin VII complex
+- [**GO:0031476**](http://amigo.geneontology.org/amigo/term/GO:0031476): myosin VI complex
+- [**GO:0031475**](http://amigo.geneontology.org/amigo/term/GO:0031475): myosin V complex
+- [**GO:0017022**](http://amigo.geneontology.org/amigo/term/GO:0017022): myosin binding
+- [**GO:0005515**](http://amigo.geneontology.org/amigo/term/GO:0005515): protein binding
+- [**GO:0016460**](http://amigo.geneontology.org/amigo/term/GO:0016460): myosin II complex

@@ -1,0 +1,3 @@
+GO:0005515	protein binding
+GO:0023051	regulation of signaling
+GO:0009966	regulation of signal transduction
