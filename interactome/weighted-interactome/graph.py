@@ -32,8 +32,7 @@ class Graph(nx.Graph):
                 continue
             if collapsed:
                 if len(items) != 7:
-                    print (
-                     'SKIPPING LINE', line)
+                    print ('SKIPPING LINE', line)
                     continue
                 pubmedids = items[2].split(';')
                 id1 = items[3]

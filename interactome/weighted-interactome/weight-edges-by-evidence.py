@@ -43,23 +43,57 @@ def main(args):
     print nx.info(net)
     
     # read mapping file.
-    if MAPFILE != None:
-        mapper = readDict(MAPFILE,FROM_COL, TO_COL)
+    if opts.mapper != None:
+        mapper = readDict(opts.mapper,opts.fromcol,opts.tocol)
     else:
         mapper = {}
 
-    ## from yeast remove values '!?' (synergizer), '---' (AFFY), 'Input not found'
-    ## from human remove keys/values '-','--' (Uniprot)
-    tofilter = ['!?','Input not found','-','--','---']
-    mapper = {k:mapper[k] for k in mapper if k not in tofilter and mapper[k] not in tofilter}
-        
+    # get GO annotations
+    ann = get_annotations(opts,net,mapper)
+   
+    # get and filter positive functions
+    posFuncs = get_pos_funcs(opts,ann)
+    
+    # get edge types from the network
+    etypes = net.getEdgeTypes()
+    # merge edges from evidences that annotate <25 edges.
+    output = open('%s-miscellaneous_edge_types.txt' %(opts.outprefix), 'w')
+    output.write('#EdgeType\tNumEdges\n')
+    to_merge = [e for e in etypes if len(etypes[e]) < 25]
+    etypes['miscellaneous'] = set()
+    for e in to_merge:
+        output.write('%s\t%d\n' % (e,len(etypes[e])))
+        etypes['miscellaneous'].update(etypes[e])
+        del etypes[e] # delete the small type
+    output.close()
+
+    # compute the weight of individual experiments
+    etypeProbs,num_pos,num_neg = compute_etype_probs(opts,net,etypes,ann,posFuncs)
+    
+    # compute the weight of edge with only experiment k
+    compute_single_evidence_edge_weights(opts,etypes,etypeProbs,num_pos,num_neg)
+    
+    # Finally, we can weight the edges.
+    # Note, priors are calculated previously, but they are so simmple
+    # recalculate them again here.
+    pr_I1 = float(num_pos)/(num_pos + num_neg) # Pr(I=1)
+    pr_I0 = 1.0 - pr_I1                        # Pr(I=0)
+    weight_edges(opts,net,etypes,etypeProbs,pr_I1,pr_I0)
+
+    print '\nWrote to positive GO terms to %s-positive-GO-terms.txt' %(opts.outprefix)
+    print 'Wrote edge types that are merged to "miscellaneous" to %s-miscellaneous_edge_types.txt' %(opts.outprefix) 
+    print 'Wrote edge type probabilities to %s-edge_type_probs.txt' %(opts.outprefix)
+    print 'Wrote edge type weights to %s-edge_type_weights.txt' %(opts.outprefix)
+    print 'Wrote weighted interactome to %s.txt' %(opts.outprefix)
+    print 'DONE.'
+    return
+
+################################################
+def get_annotations(opts,net,mapper):
     # get the annotations
-    print '\nReading the annotations from %s' %(ANNOTATIONS_FILE)
+    print '\nReading the annotations from %s' %(opts.annotations)
     ann = Annotations()
-    if FUNCASSOC:
-        ann.readGMT_FuncAssociate(ANNOTATIONS_FILE, mapper)
-    else:
-        ann.readGMT(ANNOTATIONS_FILE, mapper)
+    ann.readGMT(opts.annotations, mapper)
     print '\t%d functions' %(len(ann.getFunctions()))
     print '\t%d annotated genes' %(len(ann.getAnnotatedGenes()))
     
@@ -68,41 +102,38 @@ def main(args):
     ann.keepAnnotationsForGenes(net.nodes())
     print '\t%d functions' %(len(ann.getFunctions()))
     print '\t%d annotated genes' %(len(ann.getAnnotatedGenes()))
-   
+
+    return ann
+
+################################################
+def get_pos_funcs(opts,ann):
     # get the GO DAG
-    godag = GOdag(OBO_FILE)
+    print ''
+    godag = GOdag(opts.ontology)
     ann.applyTruePathRule(godag)
     ann.keepAnnotationsForNamespace(godag, 'biological_process')
-    print 'Keeping only biological processes.'
+    print '\nKeeping only biological processes.'
     print '\t%d functions' %(len(ann.getFunctions()))
     print '\t%d annotated genes' %(len(ann.getAnnotatedGenes()))
     
-    # get the functions that define positives
-    if FUNCASSOC:
-        lines = readColumns(FUNCS_FILE,3,5,6)
-        posFuncs = set([goterm for logodds,pval,goterm in lines if \
-                            float(logodds)>FUNCASSOC_LOGODDSTHRES and \
-                            ( (FUNCASSOC_PVALTHRES >= 0.001 and pval == '<0.001')\
-                                  or float(pval)<FUNCASSOC_PVALTHRES)])
-        print '%d GO terms with adjusted pval < %f and log odds ratio > %f.' % \
-            (len(posFuncs),FUNCASSOC_PVALTHRES,FUNCASSOC_LOGODDSTHRES)
-    else:
-        posFuncs = readItemSet(FUNCS_FILE,1)
-
+    # read functions
+    posFuncs = readItemSet(opts.functions,1)
     posSubgraph = godag.subgraph(posFuncs)
     posFuncs = set(posSubgraph.nodes())
 
     print '\nRemoving functions: (1) not in GOdag, (2) too large, (3) descendant of another function, and (4) too small, in that order.'
-    print ann.genesets.keys()
 
     ## remove any functions that aren't in the GOdag
     posFuncs = set([f for f in posFuncs if f in ann.genesets])
     print '%d GO terms after removing terms not in GOdag' % (len(posFuncs))
+    if len(posFuncs)<50:
+        for p in posFuncs:
+            print('  %s: %d genes' % (p,len(ann.genesets[p])))
 
     ## remove functions that are too large
-    posFuncs = set([f for f in posFuncs if len(ann.genesets[f])<=MAXSETSIZE])
+    posFuncs = set([f for f in posFuncs if len(ann.genesets[f])<=opts.maxsetsize])
     print '%d GO terms after removing terms with >%d genes' % \
-        (len(posFuncs),MAXSETSIZE)
+        (len(posFuncs),opts.maxsetsize)
 
     ## remove any functions with an ancestor in the list
     # for f in posFuncs:
@@ -115,98 +146,81 @@ def main(args):
     print '%d GO terms after removing descendants' % (len(posFuncs))
 
     ## remove functions that are too small
-    posFuncs = set([f for f in posFuncs if len(ann.genesets[f])>=MINSETSIZE])
+    posFuncs = set([f for f in posFuncs if len(ann.genesets[f])>=opts.minsetsize])
     print '%d GO terms after removing terms with <%d genes' % \
-        (len(posFuncs),MINSETSIZE)
+        (len(posFuncs),opts.minsetsize)
+
+    if len(posFuncs) == 0: # if we've removed all functions, exit.
+        sys.exit('ERROR: removed all GO terms.')
 
     # if there are fewer than 50, print them.
     if len(posFuncs)<50:
-        print posFuncs
-
-    if POSITIVE_GENEFILE != None:
-        ## check coverage of all genes.
-        print '\nChecking coverage of genes in positive gene file with the selected GO terms...'
-        studyset = readItemSet(POSITIVE_GENEFILE,1)
-        print '%d genes in studyset' % (len(studyset))
-        coveredgenes = set()
-        for term in posFuncs:
-            interm = ann.genesets[term].intersection(studyset)
-            #print '%d in term %s (%d tot)' % (len(interm),term,len(ann.genesets[term]))
-            coveredgenes.update(interm)
-        print '%d genes (%.2f) covered by selected GO functions' % (len(coveredgenes),len(coveredgenes)/float(len(studyset)))
-
-
-    if FUNCASSOC_GENEFILE != None:
-        ## check coverage of all genes.
-        print '\nChecking coverage of genes in FuncAssociate study set with the selected GO terms...'
-        studyset = readItemSet(FUNCASSOC_GENEFILE,1)
-        print '%d genes in studyset' % (len(studyset))
-        coveredgenes = set()
-        for term in posFuncs:
-            interm = ann.genesets[term].intersection(studyset)
-            #print '%d in term %s (%d tot)' % (len(interm),term,len(ann.genesets[term]))
-            coveredgenes.update(interm)
-        print '%d genes (%.2f) covered by selected GO functions' % (len(coveredgenes),len(coveredgenes)/float(len(studyset)))
+        for p in posFuncs:
+            print('  %s: %d genes' % (p,len(ann.genesets[p])))
 
     ## write selected terms to file.
-    output = open('%s-positive-GO-terms.txt' %(OUTPREFIX), 'w')
-    if FUNCASSOC_GENEFILE != None:
-        output.write('#numinstudyset\tnumgenes\tterm\tdescription\n')
-        for term in posFuncs:
-            output.write('%d\t%d\t%s\t%s\n' % (len(ann.genesets[term].intersection(studyset)),len(ann.genesets[term]),\
-                                               term,ann.descriptions[term]))
-    else:
-        output.write('#numgenes\tterm\tdescription\n')
-        for term in posFuncs:
-            output.write('%d\t%s\t%s\n' % (len(ann.genesets[term]),term,ann.descriptions[term]))
+    output = open('%s-positive-GO-terms.txt' %(opts.outprefix), 'w')
+    output.write('#numgenes\tterm\tdescription\n')
+    for term in posFuncs:
+        output.write('%d\t%s\t%s\n' % (len(ann.genesets[term]),term,ann.descriptions[term]))
     output.close()
 
-    allPairs = set( [(u,v) for u in net.nodes_iter() for v in net.nodes_iter() if u<v] )
+    return posFuncs
+
+################################################
+def get_pos_neg_edges(opts,net,ann,posFuncs):
+
+    # major difference from Poirel et al weighting; all pairs are all INTERACTING
+    # pairs (that is, all nodes). It used to be all n choose 2 possibilities. This
+    # is commented out to illustrate difference.
+    allPairs = set(net.edges())
+    #allPairs = set( [(u,v) for u in net.nodes_iter() for v in net.nodes_iter() if u<v] )
+    
+
     pos = set()
     neg = set()
-    pos_sets = []
     print '\nGenerating positive and negative pairs.' 
+    print 'Using the union of %d functions to generate positives' %(len(posFuncs))
+    print('\t%d total pairs (number of edges)' % (len(allPairs)))
+    # get all pairs
     for f in posFuncs:
-        currpos = set()
         funcgenes = ann.genesets[f]
-        for p in [(u,v) for u in funcgenes for v in funcgenes if u<v]:
-            currpos.add(p)
-        pos_sets.append(currpos)
-    if INTERSECTTERMS is False:
-        print 'Using the union of %d functions to generate positives' %(len(posFuncs))
-        pos = set.union(*pos_sets)
-    else:
-        print 'Using the intersection of %d functions to generate positives' %(len(posFuncs))
-        pos = set.intersection(*pos_sets)
+        pos.update([(u,v) for u in funcgenes for v in funcgenes])
+    # retain those that are edges
+    pos = pos.intersection(allPairs)
     print '\t%d positive pairs' %(len(pos))
     
     # randomly sample non-positive pairs for negative examples
-    if SAMPLESIZE*len(pos) < len(allPairs):
-        neg = set( random.sample(allPairs.difference(pos), SAMPLESIZE*len(pos)) )
+    if opts.samplesize*len(pos) < len(allPairs):
+        neg = set( random.sample(allPairs.difference(pos), opts.samplesize*len(pos)) )
     else:
         print '\tWARNING: not sampling: proportion of negatives is %.4f times the size of positives' % \
             ((len(allPairs)-len(pos))/float(len(pos)))
         neg = allPairs.difference(pos)
     print '\t%d negative pairs' %(len(neg))
-    
-    di_etypes = di_net.getEdgeTypes()
-    etypes = {}
-    # convert etypes to undirected values
-    for et, edges in di_etypes.iteritems():
-        etypes[et] = set([(u,v) if u<v else (v,u) for (u,v) in edges])
-    
-    # merge edges from evidences that annotate <25 edges.
-    etypes['miscellaneous'] = set()
-          
+    return pos,neg
+
+################################################
+def compute_etype_probs(opts,net,etypes,ann,posFuncs):
+
+    # get positive and negative edges
+    pos,neg = get_pos_neg_edges(opts,net,ann,posFuncs)
+    num_pos = len(pos)
+    num_neg = len(neg)
+
     print '\nComputing the weight of individual experiments Pr(I=1|E=1).'
+    output = open('%s-edge_type_probs.txt' %(opts.outprefix), 'w')
+    output.write('# %d positives\n' % (len(pos)))
+    output.write('# %d negatives\n' % (len(neg)))
+    output.write('#edge_type\tnumedges\tnumpos\tnumneg\n')
     etypeProbs = {}
     for et, edges in etypes.iteritems():
         
         pr_E1_I1 = float(len(pos.intersection(edges))) / len(pos) # Pr(E=1|I=1)
-        pr_E0_I1 = 1.0 - pr_E1_I1                              # Pr(E=0|I=1)
+        pr_E0_I1 = 1.0 - pr_E1_I1                                 # Pr(E=0|I=1)
         
         pr_E1_I0 = float(len(neg.intersection(edges))) / len(neg) # Pr(E=1|I=0)  
-        pr_E0_I0 = 1.0 - pr_E1_I0                              # Pr(E=0|I=0)
+        pr_E0_I0 = 1.0 - pr_E1_I0                                 # Pr(E=0|I=0)
         etypeProbs[et] = {'pr_E1_I1' : pr_E1_I1, \
                           'pr_E1_I0' : pr_E1_I0, \
                           'pr_E0_I1' : pr_E0_I1, \
@@ -214,10 +228,58 @@ def main(args):
                          }        
         p = float(len(pos.intersection(edges)))
         n = float(len(neg.intersection(edges)))
-                    
-    pr_I1 = float(len(pos))/(len(pos) + len(neg)) # Pr(I=1)
-    pr_I0 = 1.0 - pr_I1                        # Pr(I=0)
+        output.write('%s\t%d\t%d\t%d\n' % (et,len(edges),p,n))
+    output.close()
+
+    return etypeProbs,num_pos,num_neg
+
+################################################
+def weight_edges(opts,net,etypes,etypeProbs,pr_I1,pr_I0):
+    print '\nWeighting each edge with the new edge weight.'
+    output = open('%s.txt' %(opts.outprefix), 'w')
+    output.write('#tail\thead\tedge_weight\tedge_type\n')
+    if opts.weightcap:
+        cap_output = open('%s-cap%s.txt' %(opts.outprefix, str(opts.weightcap).replace('.','_')), 'w')
+        cap_output.write('#tail\thead\tedge_weight\tedge_type\n')
+    for t,h in net.edges():
+        on = set(net.edge[t][h]['types'])
+        
+        off = set(etypes.keys())
+        off.difference_update(on)
+        
+        num_I1 = pr_I1
+        num_I0 = pr_I0
+        
+        for e in on:
+            num_I1 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E1_I1']
+            num_I0 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E1_I0']
+
+        for e in off:
+            num_I1 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E0_I1']
+            num_I0 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E0_I0']
+        
+        if (num_I1+num_I0)==0:
+            weight = 0
+        else:
+            weight = num_I1/(num_I1+num_I0)
+
+        output.write('%s\t%s\t%0.5e\t%s\n' % (t,h,weight,'|'.join(on)))
+        if opts.weightcap:
+            weight = min(opts.weightcap, num_I1/(num_I1+num_I0)) if weight != 0 else weight
+            cap_output.write('%s\t%s\t%0.5e\t%s\n' % (t,h,weight,'|'.join(on)))
+    output.flush()
+    output.close()
+    if opts.weightcap:
+        cap_output.flush()
+        cap_output.close()
+    return
+
+################################################
+def compute_single_evidence_edge_weights(opts,etypes,etypeProbs,num_pos,num_neg):
     
+    pr_I1 = float(num_pos)/(num_pos + num_neg) # Pr(I=1)
+    pr_I0 = 1.0 - pr_I1                        # Pr(I=0)
+
     print '\nComputing the weight of edge with only experiment k Pr(I=1|E), where E_k=1.'
     etypeWeights = {}
     for currType in etypes.keys():
@@ -245,61 +307,12 @@ def main(args):
         else:
             etypeWeights[currType]['weight'] = 0.0
     
-    output = open('%s-edge_type_weights.txt' %(OUTPREFIX), 'w')
+    output = open('%s-edge_type_weights.txt' %(opts.outprefix), 'w')
     output.write('#total\tPr(I=1|E)\tPr(I=0|E)\tprob\tedge_type\n')
     for e, w in sorted(etypeWeights.iteritems(), key=lambda x: x[1]['weight'], reverse=True):
         output.write('%d\t%.5e\t%.5e\t%.5e\t%s\n' %(len(etypes[e]), w['num_I1'], w['num_I0'], w['weight'], e))
     output.close()
-    
-    print '\nWeighting each edge with the new edge weight.'
-    output = open('%s.txt' %(OUTPREFIX), 'w')
-    output.write('#tail\thead\tedge_weight\tedge_type\n')
-    if WEIGHTCAP:
-        cap_output = open('%s-cap%s.txt' %(OUTPREFIX, str(WEIGHTCAP).replace('.','_')), 'w')
-        cap_output.write('#tail\thead\tedge_weight\tedge_type\n')
-    for t,h in di_net.edges():
-        on = set(di_net.edge[t][h]['types'])
-        
-        off = set(etypes.keys())
-        off.difference_update(on)
-        
-        num_I1 = pr_I1
-        num_I0 = pr_I0
-        
-        for e in on:
-            num_I1 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E1_I1']
-            num_I0 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E1_I0']
-
-        for e in off:
-            num_I1 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E0_I1']
-            num_I0 *= etypeProbs.get(e, etypeProbs['miscellaneous'])['pr_E0_I0']
-        
-        if (num_I1+num_I0)==0:
-            weight = 0
-        else:
-            weight = num_I1/(num_I1+num_I0)
-        if COMPRESSED_EVIDENCE: # write one line; joine evidence types by pipe.
-            output.write('%s\t%s\t%0.5e\t%s\n' % (t,h,weight,'|'.join(on)))
-            ## Allow setting a threshold for the weight. 
-            ## for example: weight = min(0.75, num_I1/(num_I1+num_I0))
-            ## JEFF EDITED JAN 2017
-            if WEIGHTCAP:
-                weight = min(WEIGHTCAP, num_I1/(num_I1+num_I0)) if weight != 0 else weight
-                cap_output.write('%s\t%s\t%0.5e\t%s\n' % (t,h,weight,'|'.join(on)))
-        else: # write each evidence type on separate lines.
-            # comment leftover from Chris:
-            # I Shouldn't use "for etype in on:" here. I only want the etypes for this directed edge in di_net
-            for etype in on:
-                output.write('%s\t%s\t%0.5e\t%s\n' %(t, h, weight, etype))
-            if WEIGHTCAP:
-                weight = min(WEIGHTCAP, num_I1/(num_I1+num_I0)) if weight != 0 else weight
-                cap_output.write('%s\t%s\t%0.5e\t%s\n' %(t, h, weight, etype))
-    output.close()
-
-    print '\nWrote to positive GO terms to %s-positive-GO-terms.txt' %(OUTPREFIX)
-    print 'Wrote edge type probabilities to %s-edge_type_weights.txt' %(OUTPREFIX)
-    print 'Wrote weighted interactome to %s.txt' %(OUTPREFIX)
-    print 'DONE.'
+    return
 
 ################################################
 def parse_arguments(args):

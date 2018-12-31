@@ -25,7 +25,6 @@ def main(args):
 			new_ev = set()
 			for ev in orig_ev.split(';'):
 				if ev == 'None': # if there's no evidence to convert, then skip.
-					out.write(line)
 					continue
 				split_ev = ev.split(':')
 				db = split_ev[0]
@@ -39,6 +38,8 @@ def main(args):
 				new_ev.add(db+':'+newevtype)
 				all_evs.add(newevtype)
 			newevs = ';'.join(sorted([e for e in new_ev]))
+			if len(newevs)==0:
+				newevs = 'None'
 			out.write('%s\t%s\n' % ('\t'.join(row[:EVCOL]),newevs))
 	print('%d evidence types' % (len(all_evs)))
 	print(all_evs)

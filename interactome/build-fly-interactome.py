@@ -126,12 +126,12 @@ def combine_dbs(uniprot_db,flybase_db):
 	for e in uniprot_rows:
 		for i in [0,1,2]:
 			if len(uniprot_rows[e][i]) == 0:
-				uniprot_rows[e][i ] = ['None']
+				uniprot_rows[e][i] = ['None']
 
 	for e in flybase_rows:
 		for i in [0,1,2]:
 			if len(flybase_rows[e][i]) == 0:
-				flybase_rows[e][i ] = ['None']
+				flybase_rows[e][i] = ['None']
 
 	return uniprot_rows,flybase_rows
 

@@ -47,9 +47,9 @@ wget http://purl.obolibrary.org/obo/go.obo
 4. GO Functions for weighting. These should be GO terms that include regulatory (or signaling) interactions that will be considered positives. We will make this very general, with the goal to identify protein regulation:
 
 ```
-GO:0005515	protein binding
+GO:0005515	protein binding (note: not in go.obo -- this is ignored).
 GO:0023051	regulation of signaling
-GO:0009966	regulation of signal transduction
+GO:0009966	regulation of signal transduction (note: descendant of "regulation of signaling" -- this is ignored)
 ```
 
 This is stored in `functions.txt`.
@@ -57,9 +57,14 @@ This is stored in `functions.txt`.
 #### Weighting edges
 
 ```
-python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt -a gene_association.gmt -t go.obo -f functions.txt -o interactome-flybase-collapsed-evidence-weighted
+python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt -a gene_association.gmt -t go.obo -f functions.txt -o interactome-flybase-collapsed-evidence-weighted --maxsetsize 1000
 ```
 
+To plot histograms of edges:
+```
+python ../../utils/plot-hist.py interactome-flybase-collapsed-evidence-weighted.txt 2 50 "Weighted Edges" "Edge Weight" "# of Edges" interactome-flybase-collapsed-evidence-weighted.png
+python ../../utils/plot-hist.py interactome-flybase-collapsed-evidence-weighted-edge_type_weights.txt 3 20 "Weighted Edge Types" "Edge Type Weight" "# of Edge Types" interactome-flybase-collapsed-evidence-weighted-edge_type_weights.png
+```
 ### NMII Details
 
 Non-muscle myosin (NMII) is composed of mutliple subunits, each with their own protein name in FlyBase and [UniProt](https://www.uniprot.org/uniprot/?query=%22non%20muscle%22%20myosin&fil=organism%3A%22Drosophila+melanogaster+%28Fruit+fly%29+%5B7227%5D%22&sort=score):
@@ -80,3 +85,7 @@ I *think* that the regulatory regions are on the light chains -- Mlc-c (which bi
 - [**GO:0017022**](http://amigo.geneontology.org/amigo/term/GO:0017022): myosin binding
 - [**GO:0005515**](http://amigo.geneontology.org/amigo/term/GO:0005515): protein binding
 - [**GO:0016460**](http://amigo.geneontology.org/amigo/term/GO:0016460): myosin II complex
+
+### Developer Notes
+
+The weighting code produces **different** weights than the original evidence-based weighting. The issue comes down to what's specified as the space of possible pairs -- the previous method took all (_n_ choose 2) pairs for the _n_ nodes in the network.  This is an issue because the majority of those pairs are not in the network; as a result, most of the sampled negatives were never considered because they weren't edges in the network.  Instead, this method defines the space as all _interacting_ pairs (all edges in the network).  
