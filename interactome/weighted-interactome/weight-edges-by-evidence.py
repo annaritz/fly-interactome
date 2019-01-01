@@ -41,19 +41,6 @@ def main(args):
     net = Graph()
     net.read(opts.network)
     print nx.info(net)
-    
-    # read mapping file.
-    if opts.mapper != None:
-        mapper = readDict(opts.mapper,opts.fromcol,opts.tocol)
-    else:
-        mapper = {}
-
-    # get GO annotations
-    ann = get_annotations(opts,net,mapper)
-   
-    # get and filter positive functions
-    posFuncs = get_pos_funcs(opts,ann)
-    
     # get edge types from the network
     etypes = net.getEdgeTypes()
     # merge edges from evidences that annotate <25 edges.
@@ -66,12 +53,29 @@ def main(args):
         etypes['miscellaneous'].update(etypes[e])
         del etypes[e] # delete the small type
     output.close()
-
-    # compute the weight of individual experiments
-    etypeProbs,num_pos,num_neg = compute_etype_probs(opts,net,etypes,ann,posFuncs)
     
-    # compute the weight of edge with only experiment k
-    compute_single_evidence_edge_weights(opts,etypes,etypeProbs,num_pos,num_neg)
+    if opts.probs:
+        print('Reading all required information from file "%s"' % (opts.probs))
+        etypeProbs,num_pos,num_neg = read_etype_probs(opts,net,etypes)
+    else:
+        print('Collecting GO annotations, positive functions, and sampling pos and neg sets.')
+        # read mapping file.
+        if opts.mapper != None:
+            mapper = readDict(opts.mapper,opts.fromcol,opts.tocol)
+        else:
+            mapper = {}
+
+        # get GO annotations
+        ann = get_annotations(opts,net,mapper)
+       
+        # get and filter positive functions
+        posFuncs = get_pos_funcs(opts,ann)
+
+        # compute the weight of individual experiments
+        etypeProbs,num_pos,num_neg = compute_etype_probs(opts,net,etypes,ann,posFuncs)
+        
+        # compute the weight of edge with only experiment k
+        compute_single_evidence_edge_weights(opts,etypes,etypeProbs,num_pos,num_neg)
     
     # Finally, we can weight the edges.
     # Note, priors are calculated previously, but they are so simmple
@@ -233,14 +237,46 @@ def compute_etype_probs(opts,net,etypes,ann,posFuncs):
 
     return etypeProbs,num_pos,num_neg
 
+def read_etype_probs(opts,net,etypes):
+    ## like above compute_etype_probs but reads all information from the 
+    ## opts.prob file instead.
+
+    fin = open(opts.probs)
+    # first two lines are number positives and number negatives.
+    num_pos = int(fin.readline().split()[1])
+    num_neg = int(fin.readline().split()[1])
+    # next line is a header
+    fin.readline()
+
+    # for remainder, populated etypeProbs
+    etypeProbs = {}
+    for line in fin:
+
+        #edge_type  numedges    numpos  numneg
+        row = line.strip().split()
+        et = row[0]
+        numedges = int(row[1])
+        p = int(row[2])
+        n = int(row[3])
+        
+        pr_E1_I1 = float(p) / num_pos # Pr(E=1|I=1)
+        pr_E0_I1 = 1.0 - pr_E1_I1     # Pr(E=0|I=1)
+        
+        pr_E1_I0 = float(n) / num_neg # Pr(E=1|I=0)  
+        pr_E0_I0 = 1.0 - pr_E1_I0     # Pr(E=0|I=0)
+        etypeProbs[et] = {'pr_E1_I1' : pr_E1_I1, \
+                          'pr_E1_I0' : pr_E1_I0, \
+                          'pr_E0_I1' : pr_E0_I1, \
+                          'pr_E0_I0' : pr_E0_I0, \
+                         }        
+    return etypeProbs,num_pos,num_neg
+
+
 ################################################
 def weight_edges(opts,net,etypes,etypeProbs,pr_I1,pr_I0):
     print '\nWeighting each edge with the new edge weight.'
     output = open('%s.txt' %(opts.outprefix), 'w')
     output.write('#tail\thead\tedge_weight\tedge_type\n')
-    if opts.weightcap:
-        cap_output = open('%s-cap%s.txt' %(opts.outprefix, str(opts.weightcap).replace('.','_')), 'w')
-        cap_output.write('#tail\thead\tedge_weight\tedge_type\n')
     for t,h in net.edges():
         on = set(net.edge[t][h]['types'])
         
@@ -264,14 +300,8 @@ def weight_edges(opts,net,etypes,etypeProbs,pr_I1,pr_I0):
             weight = num_I1/(num_I1+num_I0)
 
         output.write('%s\t%s\t%0.5e\t%s\n' % (t,h,weight,'|'.join(on)))
-        if opts.weightcap:
-            weight = min(opts.weightcap, num_I1/(num_I1+num_I0)) if weight != 0 else weight
-            cap_output.write('%s\t%s\t%0.5e\t%s\n' % (t,h,weight,'|'.join(on)))
     output.flush()
     output.close()
-    if opts.weightcap:
-        cap_output.flush()
-        cap_output.close()
     return
 
 ################################################
@@ -325,19 +355,21 @@ def parse_arguments(args):
     parser.add_option('-n','--network',type='string',metavar='STR',\
                           help='protein-protein interactome (tab-delimited). First two columns are the tail and head nodes, the last column is the evidence type. Required.')
     parser.add_option('-a','--annotations',type='string',metavar='STR',\
-                          help='GO annotation file.  Multi-column tab delimited with "GO term" "description" "tab-delimited list of common names". Required.')
+                          help='GO annotation file.  Multi-column tab delimited with "GO term" "description" "tab-delimited list of common names". Required unless --probs specified.')
     parser.add_option('-t','--ontology',type='string',metavar='STR',\
                           help='GO Ontology (OBO) file.  Downloaded from the Gene Ontology database. Required.')
     parser.add_option('-f','--functions',type='string',metavar='STR',\
-                          help='File of GO terms that are "positives".  Originally, a 2-column tab-delimited with "GO term" "description". Now, only first column is needed. Required.')
+                          help='File of GO terms that are "positives".  Originally, a 2-column tab-delimited with "GO term" "description". Now, only first column is needed. Required unless --probs specified.')
+    parser.add_option('-o','--outprefix',type='string',metavar='STR',\
+                          help='output file prefix. Required.')
+    parser.add_option('','--probs',type='string',metavar='STR',\
+                        help='Bypass calculation of evidence type probabilities - pass it a *edge_type_probs.txt file from a previous run. Optional')
     parser.add_option('-m','--mapper',type='string',metavar='STR',\
                           help='ID Mapping File. Tab-delimited. Optional')
     parser.add_option('','--fromcol',type='int',metavar='INT',\
                           help='Mapping from column x (systematic name), indexed starting from 1. Optional.')
     parser.add_option('','--tocol',type='int',metavar='INT',\
                           help='Mapping to column y (systematic name), indexed starting from 1. Optional.')
-    parser.add_option('-o','--outprefix',type='string',metavar='STR',\
-                          help='output file prefix. Required.')
     parser.add_option('','--randseed',type='int',metavar='INT',default=1234567,\
                       help='Seed for random number generator Optional; default = 1234567.')
     parser.add_option('','--minsetsize',type='int',metavar='INT',default=2,\
@@ -346,8 +378,6 @@ def parse_arguments(args):
                           help='Maximum number of genes annotated to a term. Optional; default = 400')
     parser.add_option('','--samplesize',type='int',metavar='INT',default=10,\
                           help='For the negative set, sample X times the number of positives. Optional; default = 10')
-    parser.add_option('','--weightcap',type='float',metavar='FLOAT',\
-                          help='Cap the edge weights at the specified value (will write results to another file with -cap0_XX appended to output prefix. Usual value is 0.75')
     
     # General Options
     (opts, args) = parser.parse_args()
@@ -357,29 +387,18 @@ def parse_arguments(args):
         parser.print_help()
         sys.exit('\nERROR: network file required')
 
-    if opts.annotations == None:
-        parser.print_help()
-        sys.exit('\nERROR: annotations file required')
+    if opts.probs == None:
+        if opts.annotations == None:
+            parser.print_help()
+            sys.exit('\nERROR: annotations file required')
 
-    if opts.ontology == None:
-        parser.print_help()
-        sys.exit('\nERROR: ontology (OBO) file required')
-    
-    if opts.functions == None:
-        parser.print_help()
-        sys.exit('\nERROR: functions file required')
+        if opts.ontology == None:
+            parser.print_help()
+            sys.exit('\nERROR: ontology (OBO) file required')
 
-    #if opts.mapper == None:
-    #    parser.print_help()
-    #    sys.exit('\nERROR: mapping file required')  
-  
-    #if opts.fromcol == None:
-    #    parser.print_help()
-    #    sys.exit('\nERROR: from column required')  
-
-    #if opts.tocol == None:
-    #    parser.print_help()
-    #    sys.exit('\nERROR: to column required')  
+        if opts.functions == None:
+            parser.print_help()
+            sys.exit('\nERROR: functions file required')
     
     if opts.outprefix == None:
         parser.print_help()

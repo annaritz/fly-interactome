@@ -15,7 +15,7 @@ The final score is a weighted linear combination of the three terms, where the w
 
 _w1_ _s1(studies)_ + _w2_ _s2(databases)_ + _w3_ _s3(evidence)_
 
-There are five unknowns in this equation: the sttepness of the slope in the two non-linear saturating functions (call them _a1_ and _a2_), and _w1_ and _w2_ (since _w3 = 1-w2-w3_).  These are chosen via a parameter sweep using the DroID dataset (TODO).  This is similar to the process described in [described in Schaefer et al, Plos One, 2012](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0031826).
+There are five unknowns in this equation: the steepness of the slope in the two non-linear saturating functions (call them _a1_ and _a2_), and _w1_ and _w2_ (since _w3 = 1-w2-w3_).  These are chosen via a parameter sweep using the DroID dataset (TODO).  This is similar to the process described in [described in Schaefer et al, Plos One, 2012](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0031826).
 
 ### Evidence-based Weighting: 
 
@@ -65,6 +65,13 @@ To plot histograms of edges:
 python ../../utils/plot-hist.py interactome-flybase-collapsed-evidence-weighted.txt 2 50 "Weighted Edges" "Edge Weight" "# of Edges" interactome-flybase-collapsed-evidence-weighted.png
 python ../../utils/plot-hist.py interactome-flybase-collapsed-evidence-weighted-edge_type_weights.txt 3 20 "Weighted Edge Types" "Edge Type Weight" "# of Edge Types" interactome-flybase-collapsed-evidence-weighted-edge_type_weights.png
 ```
+
+Once you have calculated probabilities for the entire network, you can quickly reweight subsets (which will be useful for the assessment section) by passing in one of the intermediate files (`*edge_type_probs.txt`):
+
+```
+python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt --prob interactome-flybase-collapsed-evidence-weighted-edge_type_probs.tx -o test_fast_run
+```
+
 ### NMII Details
 
 Non-muscle myosin (NMII) is composed of mutliple subunits, each with their own protein name in FlyBase and [UniProt](https://www.uniprot.org/uniprot/?query=%22non%20muscle%22%20myosin&fil=organism%3A%22Drosophila+melanogaster+%28Fruit+fly%29+%5B7227%5D%22&sort=score):
