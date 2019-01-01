@@ -69,8 +69,43 @@ python ../../utils/plot-hist.py interactome-flybase-collapsed-evidence-weighted-
 Once you have calculated probabilities for the entire network, you can quickly reweight subsets (which will be useful for the assessment section) by passing in one of the intermediate files (`*edge_type_probs.txt`):
 
 ```
-python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt --prob interactome-flybase-collapsed-evidence-weighted-edge_type_probs.tx -o test_fast_run
+python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt --probs interactome-flybase-collapsed-evidence-weighted-edge_type_probs.txt -o test_fast_run
 ```
+
+### Weighting Edges
+
+Usage:
+```
+Usage: python weight-edges.py [OPTIONS]
+
+Options:
+  -h, --help            show this help message and exit
+  -n STR, --network=STR
+                        protein-protein interactome (tab-delimited). Required.
+  -c, --collapsed       Interactome is collapsed by common name (has 7
+                        columns).
+  -o STR, --outprefix=STR
+                        output file prefix. Required.
+  -e STR, --evidence=STR
+                        Evidence weights (from weight-edges-by-evidence.py)
+  --a1=FLOAT            Parameter that controls the steepness of s1 (study-
+                        based term). Default = 1.
+  --a2=FLOAT            Parameter that controls the steepness of s2 (db-based
+                        term). Default = 1
+  --w1=FLOAT            Weight of s1 (study-based term).  Float between 0 and
+                        1; w3 = 1-w1-w2. Default = 0.33
+  --w2=FLOAT            Weight of s2 (db-based term).  Float between 0 and 1;
+                        w3 = 1-w1-w2. Default = 0.33
+```
+
+Test run:
+
+```
+python weight-edges.py -n interactome-flybase-collapsed-evidence-weighted.txt -o test
+```
+
+
+
 
 ### NMII Details
 

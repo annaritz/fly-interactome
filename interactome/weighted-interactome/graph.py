@@ -50,7 +50,7 @@ class Graph(nx.Graph):
 
                 evidence = list(evidence)
             else:
-                sys.exit('IMPLEMENT!!')
+                sys.exit('File not "collapsed" (7-column) version. IMPLEMENT!!')
             if not self.has_node(name1):
                 self.add_node(name1, id=id1)
             if not self.has_node(name2):

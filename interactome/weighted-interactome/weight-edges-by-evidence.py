@@ -348,7 +348,7 @@ def compute_single_evidence_edge_weights(opts,etypes,etypeProbs,num_pos,num_neg)
 def parse_arguments(args):
     
     usage = '''
-    python weight-edges.py [OPTIONS]
+    python weight-edges-by-evidence.py [OPTIONS]
     '''
 
     parser = OptionParser(usage=usage)
