@@ -19,7 +19,7 @@ class Graph(nx.Graph):
     def __init__(self, name=''):
         nx.Graph.__init__(self, name=name)
 
-    def read(self, filename, collapsed=True):
+    def read(self, filename, strip_db=True, collapsed=True):
         infile = open(filename, 'r')
         eweight = 1
         for line in infile:
@@ -40,13 +40,16 @@ class Graph(nx.Graph):
                 databases = items[5].split(';')
                 evidence = set()
                 for item in items[6].split(';'):
-                    e = item.split(':')
-                    if len(e) == 1:
-                        continue
-                    if len(e) == 2:
-                        evidence.add(e[1])
-                    else:
-                        evidence.add((':').join(e[1:]))
+                    if strip_db: # strip "db" from "db:evidence" notation
+                        e = item.split(':') # split on ':'
+                        if len(e) == 1: # something's weird
+                            continue
+                        elif len(e) == 2: # something like "db:yth-data"
+                            evidence.add(e[1])
+                        else: # somthing like "db:MI:0000"
+                            evidence.add((':').join(e[1:]))
+                    else: # keep 'db:evidence' notation
+                        evidence.add(item)
 
                 evidence = list(evidence)
             else:

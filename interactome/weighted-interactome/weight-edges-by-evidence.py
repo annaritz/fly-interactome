@@ -43,21 +43,23 @@ def main(args):
     print nx.info(net)
     # get edge types from the network
     etypes = net.getEdgeTypes()
-    # merge edges from evidences that annotate <25 edges.
-    output = open('%s-miscellaneous_edge_types.txt' %(opts.outprefix), 'w')
-    output.write('#EdgeType\tNumEdges\n')
-    to_merge = [e for e in etypes if len(etypes[e]) < 25]
-    etypes['miscellaneous'] = set()
-    for e in to_merge:
-        output.write('%s\t%d\n' % (e,len(etypes[e])))
-        etypes['miscellaneous'].update(etypes[e])
-        del etypes[e] # delete the small type
-    output.close()
     
     if opts.probs:
         print('Reading all required information from file "%s"' % (opts.probs))
         etypeProbs,num_pos,num_neg = read_etype_probs(opts,net,etypes)
     else:
+        # merge edges from evidences that annotate <25 edges.
+        print('Get miscellaneous edge types.')
+        output = open('%s-miscellaneous_edge_types.txt' %(opts.outprefix), 'w')
+        output.write('#EdgeType\tNumEdges\n')
+        to_merge = [e for e in etypes if len(etypes[e]) < 25]
+        etypes['miscellaneous'] = set()
+        for e in to_merge:
+            output.write('%s\t%d\n' % (e,len(etypes[e])))
+            etypes['miscellaneous'].update(etypes[e])
+            del etypes[e] # delete the small type
+        output.close()
+
         print('Collecting GO annotations, positive functions, and sampling pos and neg sets.')
         # read mapping file.
         if opts.mapper != None:

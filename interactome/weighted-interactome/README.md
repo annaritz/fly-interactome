@@ -54,7 +54,7 @@ GO:0009966	regulation of signal transduction (note: descendant of "regulation of
 
 This is stored in `functions.txt`.
 
-#### Weighting edges
+#### Running the `weight-edges-by-evidence.py` script
 
 ```
 python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt -a gene_association.gmt -t go.obo -f functions.txt -o interactome-flybase-collapsed-evidence-weighted --maxsetsize 1000
@@ -101,10 +101,15 @@ Options:
 Test run:
 
 ```
-python weight-edges.py -n interactome-flybase-collapsed-evidence-weighted.txt -o test
+python weight-edges.py -n ../interactome-flybase-collapsed-evidence.txt -c -e interactome-flybase-collapsed-evidence-weighted.txt -o weighted-test.txt
+python ../../utils/plot-hist.py weighted-test.txt 2 50 "Final Edges (default params)" "Final Edge Weights" "# of Edges" weighted-test.png
 ```
 
+### Parameter Sweep
 
+```
+python parameter-sweep.py ../interactome-flybase-collapsed-evidence.txt interactome-flybase-collapsed-evidence-weighted-edge_type_probs.txt droid
+```
 
 
 ### NMII Details
