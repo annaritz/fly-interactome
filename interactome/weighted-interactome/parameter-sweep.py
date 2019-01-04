@@ -6,6 +6,7 @@ import numpy as np
 import networkx as nx			   
 from graph import Graph
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 A_PARAMS = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 3]
