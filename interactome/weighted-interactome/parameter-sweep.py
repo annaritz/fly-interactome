@@ -57,11 +57,14 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 	print('%d %s evidence types that passed filtering' % (len(ev_types_filtered),ground_truth_db))
 
 
-	test_dir = 'param-sweep-'+ground_truth_db
+	test_dir = 'param-sweep-'+ground_truth_db+'/'
 	if not os.path.isdir(test_dir):
+
 		print('making directory')
 		print('mkdir %s' % (test_dir))
-		os.system('mkdir %s' % (test_dir))
+		val = os.system('mkdir %s' % (test_dir))
+		if val != 0:
+			sys.exit()
 	
 	scores = {} # scores[ev_type][a1][a2][w1][w2] = Jaccard overlap of top quartile.
 	for ev_type in ev_types_filtered:
@@ -70,9 +73,12 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 		
 
 		interactome_prefix =  test_dir+'/'+ev_type.replace(':','-')
-		print('mkdir %s' % (interactome_prefix))
-		os.system('mkdir %s' % (interactome_prefix))
-		
+		if not os.path.isdir(interactome_prefix):
+			print('mkdir %s' % (interactome_prefix))
+			val = os.system('mkdir %s' % (interactome_prefix))
+			if val != 0:
+				sys.exit()
+			
 		# Generate interactome, removing ev_type from the list.
 		# TODO (long term) -- remove pubmed IDs if we can link them back to evtype?
 		interactome_file = interactome_prefix+'/interactome.txt'
@@ -105,7 +111,9 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 			cmd = 'python weight-edges-by-evidence.py -n %s --probs %s -o %s' % \
 				(interactome_file,probfile,weighted_interactome_prefix)
 			print(cmd)
-			os.system(cmd)
+			val = os.system(cmd)
+			if val != 0:
+				sys.exit()
 			
 		# Run parameter sweeps
 		w_str = ''
@@ -128,7 +136,9 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 				cmd = 'python weight-edges.py -n %s -c -e %s -o %s --a1 %.3f --a2 %.3f %s\n' % \
 							(interactome_file,weighted_interactome_file,out_prefix,a1,a2,w_str)
 				print(cmd)
-				os.system(cmd)
+				val = os.system(cmd)
+				if val != 0:
+					sys.exit()
 
 		print('\nCalculating scores...')
 		quartile = int(nx.number_of_edges(net)/4)
