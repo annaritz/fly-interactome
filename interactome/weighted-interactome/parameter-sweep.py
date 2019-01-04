@@ -45,14 +45,17 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 	# filter those that don't have enough edges after identifying those with mutliple edges.
 	ev_types_filtered = {}
 	for ev_type in ev_types:
+		if ev_type != 'droid:MI:0892':
+			print('skipping ',ev_type)
+			continue
 		# get edges with that attribute:
 		edges_with_ev = [(u,v) for (u,v,attrs) in net.edges(data=True) if ev_type in attrs['types']]
 		mult_ev_edges = [e for e in edges_with_ev if len(net[e[0]][e[1]]['types']) > 1]
 		if len(mult_ev_edges) >= MIN_INTERACTIONS:
 			ev_types_filtered[ev_type] = mult_ev_edges
 			print('  %d edges with evidence type "%s"; %d have mult evidence types' % (len(edges_with_ev),ev_type,len(mult_ev_edges)))
-
 	print('%d %s evidence types that passed filtering' % (len(ev_types_filtered),ground_truth_db))
+
 
 	test_dir = 'param-sweep-'+ground_truth_db
 	if not os.path.isdir(test_dir):
@@ -189,7 +192,7 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 				print('wrote scores to "%s"' % (score_file))
 
 		## make heatmap just for funsies.
-		figfile = interactome_prefix+'/%s_%s_score_heatmap.png',ground_truth_db,ev_type.replace(':','-')
+		figfile = interactome_prefix+'/%s_score_heatmap.png' % (ev_type.replace(':','-'))
 		if os.path.isfile(figfile) and not force:
 			print('File "%s" already exists -- not overwriting.' % (figfile))
 		else:
@@ -230,7 +233,8 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 					fig.colorbar(im, ax=ax)
 			
 			fig.set_tight_layout(True)
-			fig.savefig(figfile)		
+			fig.savefig(figfile)
+			print('wrote to %s' % (figfile))		
 			#plt.tight_layout()
 			#plt.savefig(figfile)
 

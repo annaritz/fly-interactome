@@ -1,3 +1,4 @@
+from __future__ import print_function
 # uncompyle6 version 3.2.5
 # Python bytecode 2.7 (62211)
 # Decompiled from: Python 3.5.1 (default, Dec 24 2015, 12:10:56) 
@@ -32,7 +33,7 @@ class Graph(nx.Graph):
                 continue
             if collapsed:
                 if len(items) != 7:
-                    print ('SKIPPING LINE', line)
+                    print('SKIPPING LINE', line)
                     continue
                 pubmedids = items[2].split(';')
                 id1 = items[3]
@@ -115,9 +116,9 @@ class Graph(nx.Graph):
 
     def count_uni_bi_directed_edges(self):
         if self.number_of_selfloops() > 0:
-            print 'There are %d selfloops in the graph. Excluding them from counts below' % self.number_of_selfloops()
+            print('There are %d selfloops in the graph. Excluding them from counts below' % self.number_of_selfloops())
         else:
-            print 'There are no selfloops in the graph.'
+            print('There are no selfloops in the graph.')
         G = self.copy()
         G.remove_edges_from(G.selfloop_edges())
         counter_unidirected = 0
