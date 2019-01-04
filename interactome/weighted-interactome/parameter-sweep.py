@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-A_PARAMS = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 3]
+A_PARAMS = [0.05, 0.1, 0.5, 1.0, 1.5, 2.0]
 
 W_PARAMS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
@@ -46,9 +46,6 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 	# filter those that don't have enough edges after identifying those with mutliple edges.
 	ev_types_filtered = {}
 	for ev_type in ev_types:
-		if ev_type != 'droid:MI:0892':
-			print('skipping ',ev_type)
-			continue
 		# get edges with that attribute:
 		edges_with_ev = [(u,v) for (u,v,attrs) in net.edges(data=True) if ev_type in attrs['types']]
 		mult_ev_edges = [e for e in edges_with_ev if len(net[e[0]][e[1]]['types']) > 1]
