@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 A_PARAMS = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 3]
+
 W_PARAMS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 MIN_INTERACTIONS = 50
@@ -18,13 +19,20 @@ MIN_INTERACTIONS = 50
 # hub-spoke-model is the same as anti-tag-coip & perrimon_coapcomplex
 FILTERS = ['interolog','FB2015_05','hub-spoke-model','perrimon_coapcomplex']
 
-def main(network,probfile,ground_truth_db):
+def main(network,weighted_network,probfile,ground_truth_db,force):
 	
 
 	print('\nReading the network from %s' %(network))
 	net = Graph()
 	net.read(network,strip_db=False,collapsed=True,)
 	print(nx.info(net))
+	print('\nResetting original network weights')
+	with open(weighted_network) as fin:
+		for line in fin:
+			if line[0] == '#':
+				continue
+			row = line.strip().split()
+			net[row[0]][row[1]]['weight'] = float(row[2])
 	
 	# get all evidence types for that db:
 	ev_types = set()
@@ -43,6 +51,7 @@ def main(network,probfile,ground_truth_db):
 		if len(mult_ev_edges) >= MIN_INTERACTIONS:
 			ev_types_filtered[ev_type] = mult_ev_edges
 			print('  %d edges with evidence type "%s"; %d have mult evidence types' % (len(edges_with_ev),ev_type,len(mult_ev_edges)))
+
 	print('%d %s evidence types that passed filtering' % (len(ev_types_filtered),ground_truth_db))
 
 	test_dir = 'param-sweep-'+ground_truth_db
@@ -50,12 +59,7 @@ def main(network,probfile,ground_truth_db):
 		print('making directory')
 		print('mkdir %s' % (test_dir))
 		os.system('mkdir %s' % (test_dir))
-	else:
-		print('NOT clearing directory.')
-		#print('clearing directory')
-		#print('rm -fr %s/*' % (test_dir))
-		#os.system('rm -fr %s/*' % (test_dir))
-
+	
 	scores = {} # scores[ev_type][a1][a2][w1][w2] = Jaccard overlap of top quartile.
 	for ev_type in ev_types_filtered:
 		edges_to_keep = set(ev_types_filtered[ev_type])
@@ -66,47 +70,54 @@ def main(network,probfile,ground_truth_db):
 		print('mkdir %s' % (interactome_prefix))
 		os.system('mkdir %s' % (interactome_prefix))
 		
-		# Generate interactome with JUST the edges in edges_to_keep 
-		# with all the evidence types EXCEPT ev_type.
-		# TODO: remove ground_truth_db if there are no other evtypes from that db
+		# Generate interactome, removing ev_type from the list.
 		# TODO (long term) -- remove pubmed IDs if we can link them back to evtype?
 		interactome_file = interactome_prefix+'/interactome.txt'
-		out = open(interactome_file,'w')
-		out.write('#symbol1\tsymbol2\tPubMedIDs\tFlyBase1\tFlyBase2\tDBs\tEvidence\n')
-		for (u,v) in edges_to_keep:
-			attrs = net[u][v]
-			id1 = net.node[u]['id']
-			id2 = net.node[v]['id']
-
-			out.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % \
-				(u,v,';'.join(attrs['pmids']), id1,id2,';'.join(attrs['dbs']), \
-					';'.join([ev for ev in attrs['types'] if ev != ev_type])
-				))
-		out.close()
-		print('Wrote interactome file to "%s"' % (interactome_file))
+		if os.path.isfile(interactome_file) and not force:
+			print('File "%s" exists -- not overwriting.' % (interactome_file))
+		else:
+			out = open(interactome_file,'w')
+			out.write('#symbol1\tsymbol2\tPubMedIDs\tFlyBase1\tFlyBase2\tDBs\tEvidence\n')
+			for (u,v) in edges_to_keep:
+				id1 = net.node[u]['id']
+				id2 = net.node[v]['id']
+				attrs = net[u][v]
+				remaining_evs = [ev for ev in attrs['types'] if ev != ev_type]
+				if len(remaining_evs) == 0:
+					continue
+				remaining_dbs = list(set([e.split(':')[0] for e in remaining_evs]))
+				out.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % \
+					(u,v,';'.join(attrs['pmids']), id1,id2,';'.join(remaining_dbs), \
+						';'.join(remaining_evs)
+					))
+			out.close()
+			print('Wrote interactome file to "%s"' % (interactome_file))
 
 		## Generate evidence-weighted probabilities. Use --prob value.
 		weighted_interactome_prefix = interactome_prefix+'/interactome-weighted'
 		weighted_interactome_file = weighted_interactome_prefix+'.txt'
-		cmd = 'python weight-edges-by-evidence.py -n %s --probs %s -o %s' % \
-			(interactome_file,probfile,weighted_interactome_prefix)
-		print(cmd)
-		os.system(cmd)
-		
+		if os.path.isfile(weighted_interactome_file) and not force:
+			print('File "%s" exists -- not overwriting.' % (weighted_interactome_file))
+		else:
+			cmd = 'python weight-edges-by-evidence.py -n %s --probs %s -o %s' % \
+				(interactome_file,probfile,weighted_interactome_prefix)
+			print(cmd)
+			os.system(cmd)
+			
 		# Run parameter sweeps
 		w_str = ''
 		for w in W_PARAMS:
 			w_str += ' --w1 %.3f --w2 %.3f' % (w,w)		
 		i=1
+		print('\nWeighting edges...')
 		for a1 in A_PARAMS:
 			scores[ev_type][a1] = {}
 			for a2 in A_PARAMS:
-				scores[ev_type][a1][a2] = {}
 
 				out_prefix = interactome_prefix+'/a1_%.3f_a2_%.3f' % (a1,a2)
-				score_file = out_prefix+'_scores.txt'
-				if os.path.isfile(score_file):
-					print('SKIPPING MAKING THIS FILE AGAIN: "%s"' % (score_file))
+				meta_information = out_prefix+'_filenames.txt'
+				if os.path.isfile(meta_information) and not force:
+					print('File "%s" already exists -- not overwriting.' % (meta_information))
 					continue
 
 				print('\n%d of %d: A1 = %f, A2 = %f' % (i,len(A_PARAMS)**2,a1,a2))
@@ -116,8 +127,22 @@ def main(network,probfile,ground_truth_db):
 				print(cmd)
 				os.system(cmd)
 
+		print('\nCalculating scores...')
+		quartile = int(nx.number_of_edges(net)/4)
+		print('There are %d edges in the first quartile.' % (quartile))
+		for a1 in A_PARAMS:
+			scores[ev_type][a1] = {}
+			for a2 in A_PARAMS:
+				out_prefix = interactome_prefix+'/a1_%.3f_a2_%.3f' % (a1,a2)
+				score_file = out_prefix+'_scores.txt'
+				if os.path.isfile(score_file) and not force:
+					print('File "%s" already exists -- not overwriting.' % (score_file))
+					continue
+
+				scores[ev_type][a1][a2] = {}
 				meta_information = out_prefix+'_filenames.txt'
 				with open(meta_information) as fin:
+
 					for line in fin:
 						if line[0] == '#':
 							continue
@@ -125,21 +150,34 @@ def main(network,probfile,ground_truth_db):
 						w1 = float(row[2])
 						w2 = float(row[3])
 						fname = row[5]
+						print('  reading %s'  %(fname))
 
 						if w1 not in scores[ev_type][a1][a2]:
 							scores[ev_type][a1][a2][w1] = {}
 
-						# compute average score for these ground truth edges.
-						scores[ev_type][a1][a2][w1][w2] = 0
-						num_edges = 0
+						# get scores for all edges.  Start with ones that
+						# are affected by ev_type disappearing.
+						score_dict = {}
 						with open(fname) as efin:
 							for eline in efin:
 								if eline[0] == '#':
 									continue
 								erow = eline.strip().split()
-								scores[ev_type][a1][a2][w1][w2] += float(erow[2])
-								num_edges+=1
-						scores[ev_type][a1][a2][w1][w2] /= num_edges
+								score_dict[tuple(sorted([erow[0],erow[1]]))] = float(erow[2])
+						# now add remainder of edges from original network; 
+						# confirm that these are not in edges_to_keep.
+						for u,v in net.edges():
+							if (u,v) not in score_dict:
+								if tuple(sorted([u,v])) in edges_to_keep:
+									sys.exit('ERROR: (%s,%s) is a kept edge but not yet in score dictionary.' % (u,v))
+								score_dict[tuple(sorted([u,v]))] = net[u][v]['weight']
+								
+						sorted_scores = sorted(score_dict.items(),key=lambda x: x[1], reverse=True)
+						top_edges = set([e for e,s in sorted_scores[:quartile]])
+						
+						# compute jaccard overlap
+						scores[ev_type][a1][a2][w1][w2] = float(len(top_edges.intersection(edges_to_keep)))/min(len(top_edges),len(edges_to_keep))
+						#print('PARAMS:',a1,a2,w1,w2,'EDGES:',len(edges_to_keep),len(top_edges),len(top_edges.intersection(edges_to_keep)),'SCORE:',scores[ev_type][a1][a2][w1][w2])
 
 				out = open(score_file,'w')
 				out.write('\t'+'\t'.join(['W2=%.3f'%w for w in W_PARAMS])+'\n')
@@ -151,51 +189,63 @@ def main(network,probfile,ground_truth_db):
 				print('wrote scores to "%s"' % (score_file))
 
 		## make heatmap just for funsies.
-		fig, ax_array = plt.subplots(nrows=len(A_PARAMS),ncols=len(A_PARAMS),figsize=(40,40))
-		current_cmap = matplotlib.cm.get_cmap()
-		current_cmap.set_bad(color='black')
-		for i in range(len(A_PARAMS)):
-			a1 = A_PARAMS[i]
-			for j in range(len(A_PARAMS)):
-				a2 = A_PARAMS[j]
+		figfile = interactome_prefix+'/%s_%s_score_heatmap.png',ground_truth_db,ev_type.replace(':','-')
+		if os.path.isfile(figfile) and not force:
+			print('File "%s" already exists -- not overwriting.' % (figfile))
+		else:
+			print('\nMaking a heatmap (just for fun)')
+			fig, ax_array = plt.subplots(nrows=len(A_PARAMS),ncols=len(A_PARAMS),figsize=(40,40))
+			current_cmap = matplotlib.cm.get_cmap()
+			current_cmap.set_bad(color='black')
+			for i in range(len(A_PARAMS)):
+				a1 = A_PARAMS[i]
+				for j in range(len(A_PARAMS)):
+					a2 = A_PARAMS[j]
 
-				out_prefix = interactome_prefix+'/a1_%.3f_a2_%.3f' % (a1,a2)
-				score_file = out_prefix+'_scores.txt'
+					out_prefix = interactome_prefix+'/a1_%.3f_a2_%.3f' % (a1,a2)
+					score_file = out_prefix+'_scores.txt'
 
-				M = []
-				with open(score_file) as fin:
-					for line in fin:
-						M.append(line.strip().split())
-				M = M[1:] # strip first row
-				M = [m[1:] for m in M] # strip first col
-				for mi in range(len(M)):
-					for mj in range(len(M)):
-						if M[mi][mj] == 'NaN':
-							M[mi][mj] = np.nan
-						else:
-							M[mi][mj] = float(M[mi][mj])
-				ax = ax_array[i][j]
-				im = ax.imshow(M,interpolation='none',origin='lower',vmin=0,vmax=1)
-				ax.set_title('A1=%.3f A2=%.3f\n(max=%.3f)' % (a1,a2,max([max(m) for m in M])))
-				ax.set_ylabel('W1')
-				ax.set_yticklabels(W_PARAMS)
-				ax.set_yticks(range(len(W_PARAMS)))
-				ax.set_xlabel('W2')
-				ax.set_xticks(range(len(W_PARAMS)))
-				ax.set_xticklabels(W_PARAMS)
+					M = []
+					with open(score_file) as fin:
+						for line in fin:
+							M.append(line.strip().split())
+					M = M[1:] # strip first row
+					M = [m[1:] for m in M] # strip first col
+					for mi in range(len(M)):
+						for mj in range(len(M)):
+							if M[mi][mj] == 'NaN':
+								M[mi][mj] = np.nan
+							else:
+								M[mi][mj] = float(M[mi][mj])
+					ax = ax_array[i][j]
+					im = ax.imshow(M,interpolation='none',origin='lower',vmin=0,vmax=1)
+					ax.set_title('A1=%.3f A2=%.3f\n(max=%.3f)' % (a1,a2,max([max(m) for m in M])))
+					ax.set_ylabel('W1')
+					ax.set_yticklabels(W_PARAMS)
+					ax.set_yticks(range(len(W_PARAMS)))
+					ax.set_xlabel('W2')
+					ax.set_xticks(range(len(W_PARAMS)))
+					ax.set_xticklabels(W_PARAMS)
 
-				fig.colorbar(im, ax=ax)
-				
-		plt.tight_layout()
-		plt.savefig(interactome_prefix+'/score_heatmap.png')
+					fig.colorbar(im, ax=ax)
+			
+			fig.set_tight_layout(True)
+			fig.savefig(figfile)		
+			#plt.tight_layout()
+			#plt.savefig(figfile)
 
 	return
 
 
 if __name__ == '__main__':
-	if len(sys.argv) != 4:
-		sys.exit('USAGE: python parameter_sweep.py <INTERACTOME> <ETYPE_PROBS> <DB>')
+	if len(sys.argv) != 5 and len(sys.argv) != 6:
+		sys.exit('USAGE: python parameter_sweep.py <INTERACTOME> <WEIGHTED_INTERACTOME> <ETYPE_PROBS> <DB> <FORCE-optional>')
 	network = sys.argv[1]
-	probfile = sys.argv[2]
-	ground_truth_db = sys.argv[3]
-	main(network,probfile,ground_truth_db)
+	weighted_network = sys.argv[2]
+	probfile = sys.argv[3]
+	ground_truth_db = sys.argv[4]
+	if len(sys.argv)==6:
+		force=True
+	else:
+		force=False
+	main(network,weighted_network,probfile,ground_truth_db,force)

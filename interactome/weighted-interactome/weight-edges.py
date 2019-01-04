@@ -53,7 +53,7 @@ def main(args):
 						out.write('%s\t%s\t%e\n' % (u,v,final_weight))
 					out.flush()
 					out.close()
-					print('Wrote to %s' % (outfile))
+					#print('Wrote to %s' % (outfile))
 	meta_out.close()
 	print('Wrote meta information to "%s"' % (opts.outprefix+'_filenames.txt'))
 	return

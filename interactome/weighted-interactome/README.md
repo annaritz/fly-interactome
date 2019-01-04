@@ -108,8 +108,10 @@ python ../../utils/plot-hist.py weighted-test.txt 2 50 "Final Edges (default par
 ### Parameter Sweep
 
 ```
-python parameter-sweep.py ../interactome-flybase-collapsed-evidence.txt interactome-flybase-collapsed-evidence-weighted-edge_type_probs.txt droid
+python parameter-sweep.py ../interactome-flybase-collapsed-evidence.txt interactome-flybase-collapsed-evidence-weighted.txt interactome-flybase-collapsed-evidence-weighted-edge_type_probs.txt droid force
 ```
+
+The last argument overwrites all files in the directories -- if it is missing, then files will only be generated if they are missing.
 
 
 ### NMII Details

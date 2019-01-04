@@ -1,0 +1,2 @@
+#numgenes	term	description
+891	GO:0023051	NA
