@@ -46,10 +46,13 @@ def main(args):
 					for (u,v,attrs) in net.edges(data=True):
 						num_pmids = len([a for a in attrs['pmids'] if a != 'unpublished'])
 						num_dbs = len(attrs['dbs'])
-
+						if (u,v) in evidence_weights:
+							ev_weight = evidence_weights[(u,v)]
+						else:
+							ev_weight = evidence_weights[(v,u)]
 						final_weight = w1*non_linear_saturating_function(num_pmids,a1) + \
 									w2 * non_linear_saturating_function(num_dbs,a2) + \
-									w3 * evidence_weights.get((u,v),evidence_weights[(v,u)])
+									w3 * ev_weight
 						out.write('%s\t%s\t%e\n' % (u,v,final_weight))
 					out.flush()
 					out.close()
@@ -89,12 +92,12 @@ def parse_arguments(args):
 						help='Parameter that controls the steepness of s1 (study-based term). Can pass multiple values. Default = 1.')
 	parser.add_option('','--a2',type='float',metavar='FLOAT',action='append', default=[], \
 						help='Parameter that controls the steepness of s2 (db-based term). Can pass multiple values. Default = 1')
-   	parser.add_option('','--w1',type='float',metavar='FLOAT',action='append', default=[], \
+	parser.add_option('','--w1',type='float',metavar='FLOAT',action='append', default=[], \
 						help='Weight of s1 (study-based term).  Float between 0 and 1; w3 = 1-w1-w2. Can pass multiple values. Default = 0.33')
-   	parser.add_option('','--w2',type='float',metavar='FLOAT',action='append', default=[], \
+	parser.add_option('','--w2',type='float',metavar='FLOAT',action='append', default=[], \
 						help='Weight of s2 (db-based term).  Float between 0 and 1; w3 = 1-w1-w2. Can pass multiple values. Default = 0.33')
 
-   	(opts, args) = parser.parse_args()
+	(opts, args) = parser.parse_args()
 	print('ARGUMENTS ARE:',opts)
 
 	if opts.network == None:

@@ -108,7 +108,7 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 		if os.path.isfile(weighted_interactome_file) and not force:
 			print('File "%s" exists -- not overwriting.' % (weighted_interactome_file))
 		else:
-			cmd = 'python weight-edges-by-evidence.py -n %s --probs %s -o %s' % \
+			cmd = 'python3 weight-edges-by-evidence.py -n %s --probs %s -o %s' % \
 				(interactome_file,probfile,weighted_interactome_prefix)
 			print(cmd)
 			val = os.system(cmd)
@@ -133,7 +133,7 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 
 				print('\n%d of %d: A1 = %f, A2 = %f' % (i,len(A_PARAMS)**2,a1,a2))
 				i+=1
-				cmd = 'python weight-edges.py -n %s -c -e %s -o %s --a1 %.3f --a2 %.3f %s\n' % \
+				cmd = 'python3 weight-edges.py -n %s -c -e %s -o %s --a1 %.3f --a2 %.3f %s\n' % \
 							(interactome_file,weighted_interactome_file,out_prefix,a1,a2,w_str)
 				print(cmd)
 				val = os.system(cmd)
@@ -253,7 +253,7 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 
 if __name__ == '__main__':
 	if len(sys.argv) != 5 and len(sys.argv) != 6:
-		sys.exit('USAGE: python parameter_sweep.py <INTERACTOME> <WEIGHTED_INTERACTOME> <ETYPE_PROBS> <DB> <FORCE-optional>')
+		sys.exit('USAGE: python3 parameter_sweep.py <INTERACTOME> <WEIGHTED_INTERACTOME> <ETYPE_PROBS> <DB> <FORCE-optional>')
 	network = sys.argv[1]
 	weighted_network = sys.argv[2]
 	probfile = sys.argv[3]
