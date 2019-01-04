@@ -1,3 +1,4 @@
+from __future__ import print_function
 '''
 Annotations and GOdag classes
 '''
@@ -78,7 +79,7 @@ class Annotations():
         headeritems = f.readline().lstrip('#').rstrip().split('\t')
         
         if ('gene' not in headeritems) or ('function' not in headeritems):
-            print 'Incorrect header in the annotations file. Required: "function", "gene"'
+            print('Incorrect header in the annotations file. Required: "function", "gene"')
             return
         
         functionCol = headeritems.index('function')
@@ -148,7 +149,7 @@ class Annotations():
     def applyTruePathRule(self, godag, typesToApply=set(['is_a', 'part_of'])):
         '''Apply the true path rule to the current annotations given the GO DAG.'''
         
-        print 'Applying the true path rule up the GO DAG.'
+        print('Applying the true path rule up the GO DAG.')
         topo = nx.topological_sort(godag)
         
         for func in topo:
@@ -179,7 +180,7 @@ class Annotations():
                            'cellular_component' : 'cellular_component', \
                            }
         if namespace not in validNamespaces.keys():
-            print 'WARNING: illegal namespace given.'
+            print('WARNING: illegal namespace given.')
             return
         namespace = validNamespaces[namespace]
         
@@ -209,7 +210,7 @@ class GOdag(nx.DiGraph):
         self.consider = {}
         
         if obofile!=None:
-            print 'Reading GO DAG from "%s".' %(obofile)
+            print('Reading GO DAG from "%s".' %(obofile))
             self.readOBO(obofile)
         
     def readOBO(self, obofile):
@@ -327,7 +328,7 @@ class GOdag(nx.DiGraph):
         infile.close()
         
         for ltype, count in linkTypes.iteritems():
-            print '\tFound %d "%s" links.' %(count, ltype)
+            print('\tFound %d "%s" links.' %(count, ltype))
 
     def add_link_type(self, u, v, ltype):
         if 'link_types' in self.edge[u][v]:
