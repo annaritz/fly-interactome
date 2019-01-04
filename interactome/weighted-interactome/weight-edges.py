@@ -49,7 +49,7 @@ def main(args):
 
 						final_weight = w1*non_linear_saturating_function(num_pmids,a1) + \
 									w2 * non_linear_saturating_function(num_dbs,a2) + \
-									w3 * evidence_weights[(u,v)]
+									w3 * evidence_weights.get((u,v),evidence_weights[(v,u)])
 						out.write('%s\t%s\t%e\n' % (u,v,final_weight))
 					out.flush()
 					out.close()

@@ -280,7 +280,7 @@ def weight_edges(opts,net,etypes,etypeProbs,pr_I1,pr_I0):
     output = open('%s.txt' %(opts.outprefix), 'w')
     output.write('#tail\thead\tedge_weight\tedge_type\n')
     for t,h in net.edges():
-        on = set(net.edge[t][h]['types'])
+        on = set(net[t][h]['types'])
         
         off = set(etypes.keys())
         off.difference_update(on)

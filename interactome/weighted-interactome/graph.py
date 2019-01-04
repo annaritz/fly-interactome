@@ -81,7 +81,7 @@ class Graph(nx.Graph):
         if outfile != None:
             ostream = open(outfile, 'w')
         ostream.write('#tail\thead\tweight\ttype\n')
-        for tail, head, edata in self.edges_iter(data=True):
+        for tail, head, edata in self.edges(data=True):
             if len(edata['types']) == 0:
                 ostream.write('%s\t%s\t%0.5e\t%s\n' % (tail, head, edata.get(weight, 1.0), ''))
                 continue
@@ -94,7 +94,7 @@ class Graph(nx.Graph):
 
     def getEdgeTypes(self):
         etypesDict = {}
-        for t, h, data in self.edges_iter(data=True):
+        for t, h, data in self.edges(data=True):
             for etype in data['types']:
                 if etype not in etypesDict:
                     etypesDict[etype] = set()
@@ -123,7 +123,7 @@ class Graph(nx.Graph):
         G.remove_edges_from(G.selfloop_edges())
         counter_unidirected = 0
         counter_bidirected = 0
-        for e in G.edges_iter():
+        for e in G.edges():
             if G.has_edge(e[1], e[0]):
                 counter_bidirected += 1
             else:
