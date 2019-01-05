@@ -83,34 +83,37 @@ def main(network,weighted_network,outprefix,force):
 			sys.exit()
 	
 	print('\nCalculate weights and compute the interquartile range for every combo')
-	out = open(outprefix+'iqr.txt','w')
-	out.write('#a1\ta2\tw1\tw2\tiqr\n')
-	best_combo = None
-	best_val = 0
-	i = 0
-	for a1,a2,w1,w2 in param_combos:
-		print('i=%d:' % (i),a1,a2,w1,w2)
-		i+=1
-		cmd = 'python3 weight-edges.py -n %s -c -e %s -o %s --a1 %.3f --a2 %.3f --w1 %.3f --w2 %.3f > out.log' % \
-		(network,weighted_network,out_dir+'run',a1,a2,w1,w2)
-		#print(cmd)
-		val = os.system(cmd)
-		if val != 0:
-			sys.exit()
-		weight_file = out_dir+'run_w1_%.3f_w2_%.3f.txt' % (w1,w2)
-		these_weights = np.loadtxt(weight_file,skiprows=0,usecols=(2,))
-		q75, q25 = np.percentile(these_weights, [75 ,25])
-		iqr = q75 - q25
-		out.write('%.3f\t%.3f\t%.3f\t%.3f\t%e\n' % (a1,a2,w1,w2,iqr))
-		print('    q75=%f, q25=%f, IQR=%f' % (q75,q25,iqr))
-		if iqr > best_val:
-			best_val = iqr
-			best_combo = (a1,a2,w1,w2)
-			print('    BEST SO FAR')
-	out.close()
-	print("BEST IQR IS "+best_val)
-	print('BEST COMBO IS %.3f\t%.3f\t%.3f\t%.3f' % (a1,a2,w1,w2))
-	print('wrote to '+outprefix+'iqr.txt')
+	if os.path.isfile(outprefix+'iqr.txt') and not force:
+		print('File %s already exists -- skipping.' % (outprefix+'iqr.txt'))
+	else:
+		out = open(outprefix+'iqr.txt','w')
+		out.write('#a1\ta2\tw1\tw2\tiqr\n')
+		best_combo = None
+		best_val = 0
+		i = 0
+		for a1,a2,w1,w2 in param_combos:
+			print('i=%d:' % (i),a1,a2,w1,w2)
+			i+=1
+			cmd = 'python3 weight-edges.py -n %s -c -e %s -o %s --a1 %.3f --a2 %.3f --w1 %.3f --w2 %.3f > out.log' % \
+			(network,weighted_network,out_dir+'run',a1,a2,w1,w2)
+			#print(cmd)
+			val = os.system(cmd)
+			if val != 0:
+				sys.exit()
+			weight_file = out_dir+'run_w1_%.3f_w2_%.3f.txt' % (w1,w2)
+			these_weights = np.loadtxt(weight_file,skiprows=0,usecols=(2,))
+			q75, q25 = np.percentile(these_weights, [75 ,25])
+			iqr = q75 - q25
+			out.write('%.3f\t%.3f\t%.3f\t%.3f\t%e\n' % (a1,a2,w1,w2,iqr))
+			print('    q75=%f, q25=%f, IQR=%f' % (q75,q25,iqr))
+			if iqr > best_val:
+				best_val = iqr
+				best_combo = (a1,a2,w1,w2)
+				print('    BEST SO FAR')
+		out.close()
+		print("BEST IQR IS "+best_val)
+		print('BEST COMBO IS %.3f\t%.3f\t%.3f\t%.3f' % (a1,a2,w1,w2))
+		print('wrote to '+outprefix+'iqr.txt')
 
 	return
 

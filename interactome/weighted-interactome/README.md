@@ -115,8 +115,20 @@ The last argument overwrites all files in the directories -- if it is missing, t
 
 
 ```
-python3 parameter-optimize.py ../interactome-flybase-collapsed-evidence.txt interactome-flybase-collapsed-evidence-weighted-edge_type_probs.txt param-opt-droid force
+python3 parameter-optimize.py ../interactome-flybase-collapsed-evidence.txt interactome-flybase-collapsed-evidence-weighted.txt param-opt-droid force
 ```
+
+Best set of parameters (as of Jan 2019) are:
+`a1=1.0 a2=1.0 w1=0.1 w2=0.6` with `q75=0.508842, q25=0.328206, IQR=0.180636.`  Use these as the final weighted interactome!
+
+```
+python3 weight-edges.py -n ../interactome-flybase-collapsed-evidence.txt -c -e interactome-flybase-collapsed-evidence-weighted.txt -o final-weighted-interactome --a1 1.0 --a2 1.0 --w1 0.1 --w2 0.6 
+mv final-weighted-interactome_w1_0.100_w2_0.600.txt final-weighted-interactome.txt
+```
+
+Final weighted interactome is `final-weighted-interactome.txt`.  To plot distribution of IQR vals:
+
+python ../../utils/plot-hist.py param-opt-droidiqr.txt 4 20 "IQR Vales for Optimal Param Settings" "IQR" "# of Param Settings" iqr.png
 
 ### NMII Details
 
