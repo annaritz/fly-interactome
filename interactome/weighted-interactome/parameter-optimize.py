@@ -83,6 +83,7 @@ def main(network,weighted_network,outprefix,force):
 			sys.exit()
 	
 	print('\nCalculate weights and compute the interquartile range for every combo')
+
 	if os.path.isfile(outprefix+'iqr.txt') and not force:
 		print('File %s already exists -- skipping.' % (outprefix+'iqr.txt'))
 	else:
@@ -110,8 +111,9 @@ def main(network,weighted_network,outprefix,force):
 				best_val = iqr
 				best_combo = (a1,a2,w1,w2)
 				print('    BEST SO FAR')
+		out.flush()
 		out.close()
-		print("BEST IQR IS "+best_val)
+		print("BEST IQR IS ",best_val)
 		print('BEST COMBO IS %.3f\t%.3f\t%.3f\t%.3f' % (a1,a2,w1,w2))
 		print('wrote to '+outprefix+'iqr.txt')
 
