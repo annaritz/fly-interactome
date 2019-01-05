@@ -44,6 +44,8 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 	print('%d %s evidence types' % (len(ev_types),ground_truth_db))
 
 	# filter those that don't have enough edges after identifying those with mutliple edges.
+	out =  open('param-sweep-'+ground_truth_db+'-evtypes.txt','w')
+	out.write('#EvType\tTotEdges\tMultEdges\n')
 	ev_types_filtered = {}
 	for ev_type in ev_types:
 		# get edges with that attribute:
@@ -52,8 +54,10 @@ def main(network,weighted_network,probfile,ground_truth_db,force):
 		if len(mult_ev_edges) >= MIN_INTERACTIONS:
 			ev_types_filtered[ev_type] = mult_ev_edges
 			print('  %d edges with evidence type "%s"; %d have mult evidence types' % (len(edges_with_ev),ev_type,len(mult_ev_edges)))
+			out.write('%s\t%d\t%d\n' % (ev_type,len(edges_with_ev),len(mult_ev_edges)))
 	print('%d %s evidence types that passed filtering' % (len(ev_types_filtered),ground_truth_db))
-
+	out.close()
+	print('Wrote to param-sweep-'+ground_truth_db+'-evtypes.txt')
 
 	test_dir = 'param-sweep-'+ground_truth_db+'/'
 	if not os.path.isdir(test_dir):
