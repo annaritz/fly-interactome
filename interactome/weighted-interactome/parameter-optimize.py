@@ -76,7 +76,6 @@ def main(network,weighted_network,outprefix,force):
 						param_combos.add((a1,a2,W_PARAMS[i],W_PARAMS[j]))
 	print ('%d parameter combinations out of %d are optimal.' % (len(param_combos),tot_opts))
 
-	print ('\nRun one instance of the weight-edges.py function (may run more than necessary but it\'s fast')
 	out_dir = outprefix+"-full-weights/"
 	if not os.path.isdir(out_dir):
 		val = os.system('mkdir %s'  %(out_dir))
@@ -99,7 +98,7 @@ def main(network,weighted_network,outprefix,force):
 		if val != 0:
 			sys.exit()
 		weight_file = out_dir+'run_w1_%.3f_w2_%.3f.txt' % (w1,w2)
-		these_weights = np.loadtxt(weight_file,skiprows=0,usecols=2)
+		these_weights = np.loadtxt(weight_file,skiprows=0,usecols=(2,))
 		q75, q25 = np.percentile(these_weights, [75 ,25])
 		iqr = q75 - q25
 		out.write('%.3f\t%.3f\t%.3f\t%.3f\t%e\n' % (a1,a2,w1,w2,iqr))
