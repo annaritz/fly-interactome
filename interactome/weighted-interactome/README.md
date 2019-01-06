@@ -130,27 +130,6 @@ Final weighted interactome is `final-weighted-interactome.txt`.  To plot distrib
 
 python ../../utils/plot-hist.py param-opt-droidiqr.txt 4 20 "IQR Vales for Optimal Param Settings" "IQR" "# of Param Settings" iqr.png
 
-### NMII Details
-
-Non-muscle myosin (NMII) is composed of mutliple subunits, each with their own protein name in FlyBase and [UniProt](https://www.uniprot.org/uniprot/?query=%22non%20muscle%22%20myosin&fil=organism%3A%22Drosophila+melanogaster+%28Fruit+fly%29+%5B7227%5D%22&sort=score):
-
-- **zip**: zipper; Myosin heavy chain; CG15792 (UniProtID: Q99323)
-- **Mlc-c**: Myosin essential light chain (UniProtID: P54357)
-- **sqh**: Myosin regulatory light chain sqh; CG3595 (UniProtID: P40423)
-
-I *think* that the regulatory regions are on the light chains -- Mlc-c (which binds myosin and calcium) and sqh (which binds calcium).  Let's start with Mlc-c -- it is annotated to 10 GO terms:
-
-- [**GO:0016459**](http://amigo.geneontology.org/amigo/term/GO:0016459): myosin complex
-- [**GO:0005509**](http://amigo.geneontology.org/amigo/term/GO:0005509): calcium ion binding
-- [**GO:0032036**](http://amigo.geneontology.org/amigo/term/GO:0032036): myosin heavy chain binding
-- [**GO:0030048**](http://amigo.geneontology.org/amigo/term/GO:0030048): actin filament-based movement
-- [**GO:0031477**](http://amigo.geneontology.org/amigo/term/GO:0031477): myosin VII complex
-- [**GO:0031476**](http://amigo.geneontology.org/amigo/term/GO:0031476): myosin VI complex
-- [**GO:0031475**](http://amigo.geneontology.org/amigo/term/GO:0031475): myosin V complex
-- [**GO:0017022**](http://amigo.geneontology.org/amigo/term/GO:0017022): myosin binding
-- [**GO:0005515**](http://amigo.geneontology.org/amigo/term/GO:0005515): protein binding
-- [**GO:0016460**](http://amigo.geneontology.org/amigo/term/GO:0016460): myosin II complex
-
 ### Developer Notes
 
 The weighting code produces **different** weights than the original evidence-based weighting. The issue comes down to what's specified as the space of possible pairs -- the previous method took all (_n_ choose 2) pairs for the _n_ nodes in the network.  This is an issue because the majority of those pairs are not in the network; as a result, most of the sampled negatives were never considered because they weren't edges in the network.  Instead, this method defines the space as all _interacting_ pairs (all edges in the network).  

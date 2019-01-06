@@ -18,6 +18,13 @@ def main(args):
 	net = Graph()
 	net.read(opts.network,opts.collapsed)
 	print(nx.info(net))
+	print('\nResetting original network weights')
+	with open(weighted_network) as fin:
+		for line in fin:
+			if line[0] == '#':
+				continue
+			row = line.strip().split()
+			net[row[0]][row[1]]['weight'] = float(row[2])
 
 	print('\nReading the evidence-weighted edges from %s' % (opts.evidence))
 	evidence_weights = read_evidence_weights(opts.evidence)
