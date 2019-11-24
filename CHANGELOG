@@ -1,12 +1,14 @@
 AUTHOR: Anna Ritz
 
-2018-12-29 
+2019-11-24 (in prepration for BIO331 Fall 2019)
 
-- Wrote code in the `utils` directory to map evidence types to MI terms.  Converted both the interactomes and collapsed interactomes (flybase and uniprot versions) to this.  Most of the evidence types except for SignaLink, DroID studies, and ortholog mapping have MI terms.
-- Retain DroID's 'unassigned4' edges -- replaced this with 'unpublished' where necessary.
-- Replaced 'NA' with 'None' for some file processing
-- Cleaned up parsing PubMedIDs and Evidence Types for DroID, Mentha, and myProteinNet
-- Mentha edges now have no evidence type (it is originally the Mentha "score", which is not used)
+- Combined the weighted file into the collapsed-interactome file so all information for the class is provided in a single file. 
+
+2019-01-06 (in preparation for Derek's BIO372 Spring 2018)
+
+- Weighted the interactome
+- Determined optimal weight(s) using a parameter sweep
+- Ran PageRank from sqh to generate candidates
 
 2018-07-16 (in preparation for Carleton College's Computational Biology Workshop Fall 2018)
 

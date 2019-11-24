@@ -130,6 +130,10 @@ Final weighted interactome is `final-weighted-interactome.txt`.  To plot distrib
 
 python ../../utils/plot-hist.py param-opt-droidiqr.txt 4 20 "IQR Vales for Optimal Param Settings" "IQR" "# of Param Settings" iqr.png
 
+### Combining weighted edges with original file
+
+The `combine-files.py` script merges the original interactome file (with evidence, DBs, etc.) with the weighted edges.  It removes 2,908 self-loops from the original interactome file.  This final file is `interactome-flybase-collapsed-weighted.txt`.
+
 ### Developer Notes
 
 The weighting code produces **different** weights than the original evidence-based weighting. The issue comes down to what's specified as the space of possible pairs -- the previous method took all (_n_ choose 2) pairs for the _n_ nodes in the network.  This is an issue because the majority of those pairs are not in the network; as a result, most of the sampled negatives were never considered because they weren't edges in the network.  Instead, this method defines the space as all _interacting_ pairs (all edges in the network).  
