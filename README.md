@@ -16,6 +16,10 @@ These files and code are released under the GPL-3.0 license.  Summary statistics
 - `interactome-uniprot-collapsed-evidence.txt` ([link to file](interactome/interactome-uniprot-collapsed-evidence.txt)): Interactome in [UniProtKB IDs](http://www.uniprot.org/)
 - `interactome-flybase-collapsed-evidence.txt` ([link to file](interactome/interactome-flybase-collapsed-evidence.txt)): Interactome in [FlyBase IDs](http://flybase.org/).
 
+**New as of January 2019:** the FlyBase collapsed interactome has been weighted according to Schaefer et al.  See the details in the README file in the [weighted directory](interactome/weighted-interactome/). The file is listed as `final-weighted-interactome.txt`, and was used in PageRank (in the [algorithms directory](algorithms/)).  As of **November 2019**, the collapsed file with weighted edges is now available:
+
+- `interactome-flybase-collapsed-weighted.txt` ([link to file](interactome/weighted-interactome/interactome-flybase-collapsed-weighted.txt))
+
 ## Databases
 The interactome is built by combining these databases. FlyBase and UniProt interactomes exist for each database, which is parsed before the interactome is compiled.  Links point to the appropriate directory.
 * [DroID](databases/DroID)
