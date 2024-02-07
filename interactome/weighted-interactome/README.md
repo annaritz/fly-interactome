@@ -1,7 +1,6 @@
 # Weighting the Fly Interactome
 
-This directory contains weighted interactome files of the form `Node1 Node2 Weight`.  This goes through the steps for the interactome collapsed by common name and merged evidence in FlyBase identifiers (`interactome-flybase-collapsed-evidence.txt`)
-
+This directory contains weighted interactome files of the form `Node1 Node2 Weight`.  This goes through the steps for the interactome collapsed by common name and merged evidence in FlyBase identifiers (`interactome-flybase-collapsed-evidence.txt`). **New Feb 2024:** files are also generated for the UniProt interactome.
 
 ## Weighting Approach
 
@@ -70,6 +69,12 @@ Once you have calculated probabilities for the entire network, you can quickly r
 
 ```
 python weight-edges-by-evidence.py -n ../interactome-flybase-collapsed-evidence.txt --probs interactome-flybase-collapsed-evidence-weighted-edge_type_probs.txt -o test_fast_run
+```
+
+**New Feb 2024:** To generate weights for the UniProtKB ids, you can call the script with these inputs:
+
+```
+python weight-edges-by-evidence.py -n ../interactome-uniprot-collapsed-evidence.txt -a gene_association.gmt -t go.obo -f functions.txt -o interactome-uniprot-collapsed-evidence-weighted --maxsetsize 1000
 ```
 
 ### Weighting Edges
